@@ -1,0 +1,397 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BM4K Autofocus</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #0d0e10; --card: #16181c; --card2: #1d2025; --line: #2a2e35;
+    --text: #e8eaed; --dim: #8b919b; --accent: #ffb020; --accent-d: #3a2c0c;
+    --ok: #3ddc84; --warn: #ffb020; --bad: #ff5252; --rec: #ff3b30;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.4 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif; }
+  header { display: flex; align-items: center; gap: 16px; padding: 14px 20px; border-bottom: 1px solid var(--line);
+    position: sticky; top: 0; background: var(--bg); z-index: 5; }
+  h1 { font-size: 17px; margin: 0; font-weight: 650; letter-spacing: .2px; }
+  .badge { display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px; border-radius: 99px;
+    background: var(--card); border: 1px solid var(--line); font-size: 13px; color: var(--dim); }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--warn); }
+  .badge.ok .dot { background: var(--ok); } .badge.ok { color: var(--text); }
+  .badge.bad .dot { background: var(--bad); }
+  .spacer { flex: 1; }
+  .info { color: var(--dim); font-size: 13px; }
+  button { font: inherit; color: var(--text); background: var(--card2); border: 1px solid var(--line); border-radius: 10px;
+    padding: 9px 14px; cursor: pointer; transition: background .12s, border-color .12s, transform .05s; }
+  button:hover { border-color: var(--dim); } button:active { transform: scale(.97); }
+  button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button.rec { font-weight: 700; padding: 10px 20px; border-radius: 99px; letter-spacing: .5px; }
+  button.rec.on { background: var(--rec); border-color: var(--rec); color: #fff; animation: pulse 1.3s infinite; }
+  @keyframes pulse { 50% { box-shadow: 0 0 0 6px rgba(255, 59, 48, .25); } }
+  main { display: grid; grid-template-columns: minmax(340px, 5fr) minmax(380px, 6fr); gap: 16px; padding: 16px 20px 40px; max-width: 1400px; margin: 0 auto; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+  .col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 16px 18px; }
+  .card h2 { margin: 0 0 12px; font-size: 12px; font-weight: 650; text-transform: uppercase; letter-spacing: 1px; color: var(--dim); display: flex; justify-content: space-between; align-items: center; }
+  .card h2 span { text-transform: none; letter-spacing: 0; font-weight: 500; }
+  .preview { position: relative; background: #000; border-radius: 16px; overflow: hidden; aspect-ratio: 16/9; border: 1px solid var(--line); }
+  .preview img { width: 100%; height: 100%; object-fit: contain; display: block; }
+  .preview.mirror img { transform: scaleX(-1); }
+  .preview .flip { position: absolute; right: 10px; top: 10px; padding: 4px 12px; border-radius: 99px; font-size: 12px;
+    background: rgba(0,0,0,.6); color: #fff; border-color: rgba(255,255,255,.25); }
+  .preview .flip[aria-pressed="true"] { background: var(--accent); color: #1a1300; border-color: var(--accent); font-weight: 650; }
+  [hidden] { display: none !important; }
+  .preview .none { position: absolute; inset: 0; display: grid; place-items: center; color: var(--dim); }
+  .preview .tag { position: absolute; left: 10px; top: 10px; background: rgba(0,0,0,.6); color: #fff; padding: 3px 10px; border-radius: 99px; font-size: 12px; }
+  .big { font-size: 40px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -.5px; line-height: 1.1; }
+  .big small { font-size: 16px; font-weight: 500; color: var(--dim); margin-left: 8px; }
+  .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .row + .row, .row + .chips, .chips + .row, .big + .row, .big + .chips { margin-top: 12px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { padding: 7px 13px; border-radius: 99px; font-size: 14px; font-variant-numeric: tabular-nums; }
+  .chip.sel { background: var(--accent-d); border-color: var(--accent); color: var(--accent); font-weight: 650; }
+  input[type=range] { flex: 1; min-width: 140px; height: 30px; -webkit-appearance: none; appearance: none; background: transparent; }
+  input[type=range]::-webkit-slider-runnable-track { height: 6px; border-radius: 3px; background: var(--line); }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; margin-top: -8px; border-radius: 50%;
+    background: var(--accent); border: 3px solid var(--card); box-shadow: 0 0 0 1px var(--accent); }
+  input[type=range]::-moz-range-track { height: 6px; border-radius: 3px; background: var(--line); }
+  input[type=range]::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: var(--accent); border: 3px solid var(--card); }
+  .lbl { color: var(--dim); font-size: 13px; min-width: 56px; }
+  .val { font-variant-numeric: tabular-nums; min-width: 64px; text-align: right; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .seg button { border: 0; border-radius: 0; background: transparent; padding: 7px 13px; }
+  .seg button.sel { background: var(--accent-d); color: var(--accent); font-weight: 650; }
+  .switch { position: relative; width: 52px; height: 30px; flex: none; }
+  .switch input { opacity: 0; position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; z-index: 1; }
+  .switch i { position: absolute; inset: 0; background: var(--line); border-radius: 99px; transition: background .15s; }
+  .switch i::after { content: ""; position: absolute; left: 3px; top: 3px; width: 24px; height: 24px; border-radius: 50%; background: #fff; transition: transform .15s; }
+  .switch input:checked + i { background: var(--ok); } .switch input:checked + i::after { transform: translateX(22px); }
+  .switch input:focus-visible + i { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .meter { height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
+  .meter b { display: block; height: 100%; background: var(--ok); width: 0; transition: width .2s, background .2s; }
+  .stat { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 12px; font-size: 13px; color: var(--dim); }
+  .stat b { display: block; color: var(--text); font-size: 17px; font-variant-numeric: tabular-nums; }
+  select { font: inherit; color: var(--text); background: var(--card2); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+  details { margin: 0 20px 40px; max-width: 1360px; }
+  @media (min-width: 1440px) { details { margin: 0 auto 40px; } }
+  summary { cursor: pointer; color: var(--dim); padding: 8px 0; }
+  pre { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px; overflow: auto; font-size: 12px; max-height: 320px; }
+  .off { opacity: .45; pointer-events: none; }
+  button.danger { color: var(--bad); border-color: rgba(255,82,82,.45); }
+  button.danger:hover { background: rgba(255,82,82,.12); border-color: var(--bad); }
+  a.btn { display: inline-block; text-decoration: none; color: #1a1300; background: var(--accent); font-weight: 650;
+    border-radius: 10px; padding: 10px 18px; }
+  #gone { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; background: rgba(13,14,16,.88);
+    backdrop-filter: blur(6px); }
+  #gone .box { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 26px 30px; max-width: 440px; text-align: center; }
+  #gone h2 { margin: 0 0 8px; font-size: 20px; } #gone p { color: var(--dim); margin: 0 0 18px; }
+  .note { color: var(--dim); font-size: 13px; margin-top: 10px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>BM4K Autofocus</h1>
+  <span class="badge" id="link"><i class="dot"></i><span id="linkText">подключение…</span></span>
+  <span class="info" id="mode"></span>
+  <span class="spacer"></span>
+  <button class="rec" id="rec" aria-pressed="false">● REC</button>
+</header>
+
+<main>
+  <div class="col">
+    <div class="preview">
+      <img id="pv" alt="Превью камеры" src="/preview.mjpg">
+      <div class="none" id="noVideo" hidden>Нет видео с камеры</div>
+      <span class="tag" id="afTag"></span>
+      <button class="flip" id="flip" aria-pressed="false" title="Зеркальное отображение превью (как в зеркале)">⇋ Зеркало</button>
+    </div>
+
+    <div class="card" id="afCard">
+      <h2>Автофокус <span id="afState">выкл</span></h2>
+      <div class="row">
+        <label class="switch"><input type="checkbox" id="afEnable" aria-label="Следящий автофокус"><i></i></label>
+        <span>Следить за лицом</span>
+        <span class="spacer"></span>
+        <button id="afNow">Навести сейчас</button>
+      </div>
+      <div class="row">
+        <span class="lbl">Отклик</span>
+        <div class="seg" id="afProfile">
+          <button data-v="soft">Мягко</button><button data-v="normal">Норма</button><button data-v="fast">Быстро</button>
+        </div>
+      </div>
+      <div class="row">
+        <span class="lbl">Метод</span>
+        <div class="seg" id="afMode">
+          <button data-v="precise" title="Фокус по размеру лица и уточнение по резкости: быстро, плавно, работает и не по центру">Точный</button><button data-v="camera" title="Встроенный AF камеры: ищет резкость по центру кадра">Камера AF</button>
+        </div>
+      </div>
+      <div class="row" style="margin-top:14px"><span class="lbl">Резкость</span><div class="meter" style="flex:1"><b id="sharpBar"></b></div></div>
+      <div class="stat">
+        <div><b id="afSharp">–</b>резкость / эталон</div>
+        <div><b id="afLast">–</b>последняя наводка</div>
+        <div><b id="afCount">0</b>наводок, <span id="afFps">0</span> кадр/с</div>
+      </div>
+      <div class="note" id="afNote">Камера наводится по центру кадра: лицо держите ближе к центру.</div>
+      <div class="note" id="afDbg" hidden></div>
+    </div>
+
+    <div class="card" id="audioCard">
+      <h2>Звук</h2>
+      <div class="row"><span class="lbl">Микрофон</span><input type="range" id="mic" min="0" max="1" step="0.01" aria-label="Уровень микрофона"><span class="val" id="micVal">–</span></div>
+      <div class="row"><span class="lbl">Вход</span>
+        <select id="micInput" aria-label="Тип входа">
+          <option value="0">Встроенный микрофон</option><option value="1">Линейный вход</option>
+          <option value="2">Микрофон, низкий уровень</option><option value="3">Микрофон, высокий уровень</option>
+        </select></div>
+    </div>
+
+    <div class="card" id="svcCard">
+      <h2>Служба</h2>
+      <div class="row">
+        <label class="switch"><input type="checkbox" id="autostart" aria-label="Запускать при входе в систему"><i></i></label>
+        <span>Запускать при входе в систему</span>
+      </div>
+      <div class="row"><button class="danger" id="quit">Остановить службу</button></div>
+      <div class="note">Служба держит связь с камерой и наводит фокус в фоне. После остановки запустить её можно иконкой BM4K Autofocus в Dock.</div>
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="card">
+      <h2>Диафрагма <span id="zoomInfo"></span></h2>
+      <div class="big" id="fVal">–</div>
+      <div class="row">
+        <button id="apOpen" title="Открыть на 1/3 стопа">◀ Шире</button>
+        <button id="apClose" title="Закрыть на 1/3 стопа">Уже ▶</button>
+        <span class="spacer"></span>
+        <button id="autoIris">Авто диафрагма</button>
+      </div>
+      <div class="note" id="aiNote" hidden></div>
+      <div class="row"><span class="lbl">Шире</span><input type="range" id="apAv" min="0.5" max="8" step="0.05" aria-label="Диафрагма: слева шире, справа уже"><span class="lbl" style="text-align:right">Уже</span></div>
+    </div>
+
+    <div class="card">
+      <h2>Выдержка <span id="shSpeed"></span></h2>
+      <div class="big" id="shAngle">–</div>
+      <div class="chips" id="shChips"></div>
+      <div class="row"><span class="lbl">Угол</span><input type="range" id="shRange" min="11.25" max="360" step="0.25" aria-label="Угол затвора"><span class="val" id="shVal">–</span></div>
+    </div>
+
+    <div class="card">
+      <h2>ISO</h2>
+      <div class="big" id="isoVal">–</div>
+      <div class="chips" id="isoChips"></div>
+      <div class="note">Родные значения этой камеры — 400 и 3200: там меньше шума.</div>
+    </div>
+
+    <div class="card">
+      <h2>Баланс белого</h2>
+      <div class="big" id="wbVal">–<small id="tintVal"></small></div>
+      <div class="chips" id="wbChips"></div>
+      <div class="row"><span class="lbl">Температура</span><input type="range" id="kelvin" min="2500" max="10000" step="50" aria-label="Цветовая температура"></div>
+      <div class="row"><span class="lbl">Оттенок</span><input type="range" id="tint" min="-50" max="50" step="1" aria-label="Оттенок"></div>
+      <div class="row"><button id="autoWb">Авто баланс белого</button></div>
+    </div>
+  </div>
+</main>
+
+<div id="gone" hidden>
+  <div class="box">
+    <h2>Служба остановлена</h2>
+    <p>Автофокус и управление камерой не работают. Чтобы запустить службу снова, нажмите кнопку или иконку BM4K Autofocus в Dock. Страница подключится сама.</p>
+    <a class="btn" href="bm4k://start">Запустить службу</a>
+  </div>
+</div>
+
+<details id="dbg">
+  <summary>Отладка: что присылает камера и что мы ей отправляли</summary>
+  <pre id="dbgLog"></pre>
+  <pre id="dbgRaw"></pre>
+</details>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const ISO = [100, 200, 400, 800, 1250, 1600, 3200, 6400, 12800];
+const ANGLES = [45, 90, 144, 172.8, 180, 270, 360];
+const WB = [["Лампа", 3200], ["Люм.", 4000], ["Солнце", 5600], ["Облачно", 6500], ["Тень", 7500]];
+const CODEC = ["CinemaDNG", "DNxHD", "ProRes", "BRAW"];
+const BRAW = {0: "Q0", 7: "Q1", 8: "Q3", 1: "Q5", 2: "3:1", 3: "5:1", 4: "8:1", 5: "12:1"};
+const DIMS = {2: "720", 3: "1080", 4: "2K DCI", 5: "2K", 6: "UHD", 8: "4K DCI", 9: "4K"};
+const dragging = new Set();
+let S = null, ws = null, goneTimer = null;
+
+function send(a, v) { if (ws && ws.readyState === 1) ws.send(JSON.stringify({a, v})); }
+
+function connect() {
+  ws = new WebSocket(`ws://${location.host}/ws`);
+  ws.onopen = () => { clearTimeout(goneTimer); $("gone").hidden = true; reloadPreview(); };
+  ws.onmessage = e => { S = JSON.parse(e.data); render(); };
+  ws.onclose = () => {
+    setLink("bad", "нет связи со службой");
+    goneTimer = setTimeout(() => { $("gone").hidden = false; }, 2000);  // короткий перезапуск оверлей не показывает
+    setTimeout(connect, 1000);
+  };
+}
+
+// поток превью обрывается при перезапуске службы или камеры: открываем его заново
+function reloadPreview() { $("pv").src = "/preview.mjpg?" + Date.now(); }
+let hadVideo = false;
+
+function setLink(cls, text) { $("link").className = "badge " + cls; $("linkText").textContent = text; }
+const fmt = (v, d = 0) => v == null ? "–" : Number(v).toFixed(d);
+
+// ползунок: во время перетаскивания не перезаписываем значение, команды шлём не чаще раза в 80 мс
+function slider(id, action, toValue, show) {
+  const el = $(id); let last = 0, timer = null;
+  const push = () => { send(action, toValue(el.value)); last = Date.now(); timer = null; };
+  el.addEventListener("input", () => {
+    dragging.add(id); show && show(el.value);
+    if (Date.now() - last > 80) push(); else if (!timer) timer = setTimeout(push, 80);
+  });
+  el.addEventListener("change", () => { clearTimeout(timer); push(); dragging.delete(id); });
+}
+const setSlider = (id, v) => { if (v != null && !dragging.has(id)) $(id).value = v; };
+
+function chips(id, items, onPick) {
+  $(id).innerHTML = "";
+  items.forEach(([label, value]) => {
+    const b = document.createElement("button");
+    b.className = "chip"; b.textContent = label; b.dataset.v = value;
+    b.onclick = () => onPick(value);
+    $(id).append(b);
+  });
+}
+const mark = (id, test) => [...$(id).children].forEach(b => b.classList.toggle("sel", test(Number(b.dataset.v))));
+
+function render() {
+  const d = S.d, link = S.link;
+  const ok = link.status === "connected";
+  setLink(ok ? "ok" : link.status === "error" ? "bad" : "", ok ? link.name || "камера подключена"
+    : ({search: "поиск камеры…", connecting: "подключение…", error: "ошибка связи"}[link.status] || link.status)
+    + (link.detail ? ": " + link.detail : ""));
+  document.querySelectorAll(".card").forEach(c => c.classList.toggle("off", !ok && c.id !== "afCard"));
+
+  const rf = d.rec_format, vm = d.video_mode;
+  const fps = rf ? rf[0] : vm ? vm[0] : null;
+  const parts = [];
+  if (fps) parts.push(fps + " fps");
+  if (rf && rf[2] && rf[3]) parts.push(rf[2] + "×" + rf[3]);
+  else if (vm && DIMS[vm[2]]) parts.push(DIMS[vm[2]]);
+  if (d.codec && CODEC[d.codec[0]]) {
+    const q = d.codec[0] === 3 && BRAW[d.codec[1]] ? " " + BRAW[d.codec[1]] : "";
+    parts.push(CODEC[d.codec[0]] + q);
+  }
+  $("mode").textContent = parts.join(" · ");
+
+  $("rec").classList.toggle("on", d.rec); $("rec").setAttribute("aria-pressed", d.rec);
+  $("rec").textContent = d.rec ? "■ СТОП" : "● REC";
+
+  const fnum = d.f_text ? Number(d.f_text.replace(/[^0-9.]/g, "")) : d.f;
+  $("fVal").textContent = fnum ? "f/" + fnum : "–";
+  $("zoomInfo").textContent = [d.lens, d.zoom_text].filter(Boolean).join(" · ");
+  setSlider("apAv", d.av);
+  $("aiNote").textContent = S.auto_iris || ""; $("aiNote").hidden = !S.auto_iris;
+  $("audioCard").hidden = d.mic == null && d.mic_input == null;
+
+  $("shAngle").innerHTML = d.shutter_angle == null ? "–" : fmt(d.shutter_angle, d.shutter_angle % 1 ? 1 : 0) + "°";
+  const speed = fps && d.shutter_angle ? Math.round(fps * 360 / d.shutter_angle) : d.shutter_speed;
+  $("shSpeed").textContent = speed ? "1/" + speed + " с" : "";
+  setSlider("shRange", d.shutter_angle);
+  $("shVal").textContent = fmt(d.shutter_angle, 1) + "°";
+  mark("shChips", v => d.shutter_angle != null && Math.abs(v - d.shutter_angle) < 0.3);
+
+  $("isoVal").textContent = d.iso == null ? "–" : d.iso;
+  mark("isoChips", v => v === d.iso);
+
+  $("wbVal").firstChild.textContent = d.kelvin == null ? "–" : d.kelvin + " K";
+  $("tintVal").textContent = d.tint == null ? "" : "оттенок " + (d.tint > 0 ? "+" : "") + d.tint;
+  setSlider("kelvin", d.kelvin); setSlider("tint", d.tint);
+  mark("wbChips", v => d.kelvin != null && Math.abs(v - d.kelvin) < 60);
+
+  setSlider("mic", d.mic); $("micVal").textContent = d.mic == null ? "–" : Math.round(d.mic * 100) + "%";
+  if (d.mic_input != null && document.activeElement !== $("micInput")) $("micInput").value = d.mic_input;
+
+  // видео и автофокус
+  $("autostart").checked = !!S.autostart;
+  if (S.video && !hadVideo) reloadPreview();
+  hadVideo = S.video;
+  $("noVideo").hidden = S.video; $("pv").hidden = !S.video;
+  const af = S.af;
+  $("afCard").classList.toggle("off", !af);
+  if (af) {
+    $("afEnable").checked = af.enabled;
+    $("afState").textContent = af.state;
+    $("afTag").textContent = af.enabled ? "AF · " + af.state : "";
+    $("afTag").hidden = !af.enabled;
+    [...$("afProfile").children].forEach(b => b.classList.toggle("sel", b.dataset.v === af.profile));
+    [...$("afMode").children].forEach(b => b.classList.toggle("sel", b.dataset.v === af.mode));
+    const precise = af.mode === "precise";
+    $("afNote").textContent = precise ? "Фокус по лицу, работает и не по центру кадра. Если лицо закрыто предметом, фокус переходит на предмет в центре, а когда лицо вернулось, возвращается на него. «Навести сейчас» удерживает фокус на центре 10 секунд."
+      : "Камера наводится по центру кадра: лицо держите ближе к центру.";
+    $("afDbg").hidden = !precise;
+    const q = af.quality;
+    $("afDbg").textContent = precise ? (af.lens ? "объектив " + af.lens + " · " : "") + "позиция " + (af.x == null ? "–" : af.x) + " · модель C " + (af.C == null ? "не обучена" : af.C)
+      + (q ? " · в фокусе " + (q.in_focus == null ? "–" : q.in_focus + "%") + " · мигание " + q.blink + "% · команд " + q.cmds + "/мин · уточнений " + q.refines + "/мин"
+        + " · шум размера: рамка " + (q.noise_box == null ? "–" : q.noise_box + "%") + ", глаза " + (q.noise_eyes == null ? "–" : q.noise_eyes + "%")
+        + " · шум резкости: лицо " + (q.noise_sf == null ? "–" : q.noise_sf + "%") + ", глаза " + (q.noise_se == null ? "–" : q.noise_se + "%") : "") : "";
+    $("afSharp").textContent = af.sharp == null ? "–" : af.sharp + " / " + af.base;
+    $("afLast").textContent = af.last_af_s == null ? "–" : af.last_af_s + " с";
+    $("afCount").textContent = af.af_count; $("afFps").textContent = af.fps;
+    const r = af.sharp && af.base ? Math.min(af.sharp / af.base, 1.2) / 1.2 : 0;
+    $("sharpBar").style.width = Math.round(r * 100) + "%";
+    $("sharpBar").style.background = r < 0.45 ? "var(--bad)" : r < 0.6 ? "var(--warn)" : "var(--ok)";
+  }
+  if ($("dbg").open) {
+    $("dbgLog").textContent = S.log.join("\n") || "(пока пусто)";
+    $("dbgRaw").textContent = Object.entries(S.raw).map(([k, v]) => k.padEnd(6) + JSON.stringify(v)).join("\n");
+  }
+}
+
+// ---- элементы управления ----
+chips("isoChips", ISO.map(v => [v, v]), v => send("iso", v));
+chips("shChips", ANGLES.map(v => [v + "°", v]), v => send("shutter_angle", v));
+chips("wbChips", WB.map(([n, k]) => [`${n} ${k}`, k]), k => send("wb", {kelvin: k, tint: S.d.tint || 0}));
+
+slider("shRange", "shutter_angle", Number, v => $("shVal").textContent = Number(v).toFixed(1) + "°");
+slider("apAv", "aperture_av", Number);
+slider("mic", "mic_level", Number, v => $("micVal").textContent = Math.round(v * 100) + "%");
+const wbSend = () => ({kelvin: Number($("kelvin").value), tint: Number($("tint").value)});
+slider("kelvin", "wb", wbSend, v => $("wbVal").firstChild.textContent = v + " K");
+slider("tint", "wb", wbSend);
+
+$("apClose").onclick = () => send("aperture_step", 1 / 3);
+$("apOpen").onclick = () => send("aperture_step", -1 / 3);
+$("autoIris").onclick = () => send("auto_iris");
+$("autoWb").onclick = () => send("auto_wb");
+$("rec").onclick = () => send("record", !(S && S.d.rec));
+$("afEnable").onchange = e => send("af_enable", e.target.checked);
+$("afNow").onclick = () => send("af_now");
+$("afMode").onclick = e => e.target.dataset.v && send("af_mode", e.target.dataset.v);
+$("afProfile").onclick = e => e.target.dataset.v && send("af_profile", e.target.dataset.v);
+$("autostart").onchange = e => send("autostart", e.target.checked);
+$("quit").onclick = () => {
+  if (confirm("Остановить службу?\n\nАвтофокус и управление камерой перестанут работать, пока служба не запущена снова (иконка BM4K Autofocus в Dock).")) send("quit");
+};
+$("micInput").onchange = e => send("mic_input", Number(e.target.value));
+$("dbg").addEventListener("toggle", () => S && render());
+
+// зеркало превью: запоминается в браузере, по умолчанию включено
+function setMirror(on) {
+  document.querySelector(".preview").classList.toggle("mirror", on);
+  $("flip").setAttribute("aria-pressed", on);
+  try { localStorage.setItem("bm4k-mirror", on ? "1" : "0"); } catch (e) { /* без сохранения */ }
+}
+let mirrorOn = true;
+try { mirrorOn = localStorage.getItem("bm4k-mirror") !== "0"; } catch (e) { /* по умолчанию вкл. */ }
+setMirror(mirrorOn);
+$("flip").onclick = () => setMirror($("flip").getAttribute("aria-pressed") !== "true");
+
+connect();
+</script>
+</body>
+</html>

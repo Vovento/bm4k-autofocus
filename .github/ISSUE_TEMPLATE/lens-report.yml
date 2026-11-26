@@ -1,0 +1,48 @@
+name: Lens / camera test report
+description: Share results for a different lens or Blackmagic camera
+title: "Compatibility: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for testing. Please do not upload face images, trace files, `focus_model.json`, BLE identifiers or personal paths.
+  - type: input
+    id: camera
+    attributes:
+      label: Camera and firmware
+      placeholder: Pocket Cinema Camera 4K, firmware version
+    validations:
+      required: true
+  - type: input
+    id: lens
+    attributes:
+      label: Lens and adapter
+      placeholder: Lens model, mount, adapter or speed booster
+    validations:
+      required: true
+  - type: input
+    id: macos
+    attributes:
+      label: macOS and Python versions
+  - type: dropdown
+    id: usb
+    attributes:
+      label: USB video detected?
+      options: ["Yes", "No", "Not tested"]
+  - type: dropdown
+    id: ble
+    attributes:
+      label: Bluetooth control connected?
+      options: ["Yes", "No", "Not tested"]
+  - type: textarea
+    id: feedback
+    attributes:
+      label: Lens feedback and autofocus result
+      description: Does the camera report lens name, focal length and focus distance? How did tracking perform?
+    validations:
+      required: true
+  - type: textarea
+    id: profile
+    attributes:
+      label: Profile measurement notes
+      description: If you measured and verified a profile, describe the method and link a pull request.

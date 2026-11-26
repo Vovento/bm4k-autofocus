@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+*.app/
+*.log
+settings.json
+focus_model.json
+trace.json
+trace_prev.json
+snapshots/
+Документация/
+assets/AppIcon.iconset/
+profiles/*
+!profiles/64x-sigma-dc-18-35-1-7-hsm.json
