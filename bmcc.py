@@ -1,4 +1,4 @@
-"""Общий код: BLE-управление фокусом BMPCC 4K и работа с картинкой (камера по USB, поиск лица, резкость)."""
+"""Common code: BLE focus control BMPCC 4K and image processing (USB camera, face search, sharpness)."""
 import struct
 
 import cv2
@@ -11,11 +11,11 @@ OUTGOING = "5dd3465f-1aee-4299-8493-d2eca2f8e1bb"
 INCOMING = "b864e140-76a0-416a-bf30-5876504537d9"
 
 
-# ---- BLE: пакеты Camera Control ----
+# ---- BLE: Camera Control packets ----
 
 def packet(category, parameter, dtype, operation, data=b""):
     body = bytes([category, parameter, dtype, operation]) + data
-    msg = bytes([255, len(body), 0, 0]) + body  # 255 = всем устройствам
+    msg = bytes([255, len(body), 0, 0]) + body # 255 = all devices
     return msg + b"\x00" * (-len(msg) % 4)
 
 
@@ -32,7 +32,7 @@ async def find_camera(timeout=15.0):
     dev = await BleakScanner.find_device_by_filter(
         lambda d, adv: BM_SERVICE in [u.lower() for u in adv.service_uuids], timeout=timeout)
     if dev is None:
-        raise SystemExit("Камера не найдена по BLE. Bluetooth включён на камере? Телефон отключён?")
+        raise SystemExit("The camera was not found via BLE. Is Bluetooth enabled on the camera? Is the phone turned off?")
     return dev
 
 
@@ -40,14 +40,14 @@ async def set_focus(client, x):
     await client.write_gatt_char(OUTGOING, focus_assign(x), response=True)
 
 
-# ---- Видео: камера по USB ----
+# ---- Video: camera via USB ----
 
 def _avfoundation_camera_devices(avfoundation):
-    """Устройства в том же порядке, в котором их нумерует OpenCV AVFoundation.
+    """Devices in the same order in which OpenCV AVFoundation numbers them.
 
-    OpenCV объединяет Video и Muxed, затем сортирует устройства по uniqueID.
-    Порядок, который напрямую возвращает AVFoundation, может отличаться и
-    меняться при подключении Pocket или Continuity Camera.
+    OpenCV combines Video and Muxed, then sorts devices by uniqueID.
+    The order that AVFoundation directly returns may vary and
+    change when connecting Pocket or Continuity Camera.
     """
     devices = list(avfoundation.AVCaptureDevice.devicesWithMediaType_(avfoundation.AVMediaTypeVideo))
     devices += list(avfoundation.AVCaptureDevice.devicesWithMediaType_(avfoundation.AVMediaTypeMuxed))
@@ -55,13 +55,13 @@ def _avfoundation_camera_devices(avfoundation):
 
 
 def camera_names():
-    """Имена видеоустройств macOS в точном порядке индексов OpenCV AVFoundation."""
+    """macOS video device names in exact order of OpenCV AVFoundation indexes."""
     import AVFoundation
     return [device.localizedName() for device in _avfoundation_camera_devices(AVFoundation)]
 
 
 def ensure_camera_access():
-    """Запросить доступ к камере у macOS и дождаться ответа (OpenCV сам не ждёт диалога)."""
+    """Request access to the camera from macOS and wait for a response (OpenCV itself does not wait for the dialogue)."""
     import threading
 
     import AVFoundation
@@ -69,9 +69,9 @@ def ensure_camera_access():
     if status == 3:  # authorized
         return
     if status in (1, 2):  # restricted / denied
-        raise SystemExit("Доступ к камере запрещён: Системные настройки → Конфиденциальность и безопасность → Камера → "
-                         "включите приложение (Terminal или BM4K Autofocus Service) и перезапустите его.")
-    print("Запрашиваю доступ к камере: нажмите «Разрешить» в диалоге macOS...")
+        raise SystemExit("Access to the camera is denied: System settings → Privacy and security → Camera → "
+                         "enable the application (Terminal or BM4K Autofocus Service) and restart it.")
+    print("Requesting access to the camera: click Allow in the macOS dialog...")
     done, granted = threading.Event(), []
 
     def handler(ok):
@@ -81,22 +81,22 @@ def ensure_camera_access():
     AVFoundation.AVCaptureDevice.requestAccessForMediaType_completionHandler_(
         AVFoundation.AVMediaTypeVideo, handler)
     if not done.wait(120) or not granted[0]:
-        raise SystemExit("Доступ к камере не получен: Системные настройки → Конфиденциальность и безопасность → Камера.")
+        raise SystemExit("Access to the camera was not obtained: System settings → Privacy and security → Camera.")
 
 
 def open_camera(index):
     ensure_camera_access()
     cap = cv2.VideoCapture(index, cv2.CAP_AVFOUNDATION)
     if not cap.isOpened():
-        raise SystemExit(f"Не удалось открыть камеру #{index}. Дали Terminal доступ к камере "
-                         "(Системные настройки → Конфиденциальность → Камера)?")
+        raise SystemExit(f"Could not open camera #{index}. Gave Terminal access to camera "
+                         "(System Settings → Privacy → Camera)?")
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
     return cap
 
 
 def latest_frame(cap, flush=4):
-    """Сбросить накопившиеся кадры и вернуть свежий."""
+    """Reset accumulated frames and return fresh."""
     frame = None
     for _ in range(flush):
         ok, f = cap.read()
@@ -106,7 +106,7 @@ def latest_frame(cap, flush=4):
 
 
 def detect_face(frame):
-    """Самое крупное лицо: (x, y, w, h) в пикселях или None. Apple Vision, без внешних моделей."""
+    """Largest face: (x, y, w, h) in pixels or None. Apple Vision, no external models."""
     ok, buf = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 90])
     data = Foundation.NSData.dataWithBytes_length_(buf.tobytes(), len(buf))
     handler = Vision.VNImageRequestHandler.alloc().initWithData_options_(data, None)
@@ -117,15 +117,15 @@ def detect_face(frame):
         return None
     h_img, w_img = frame.shape[:2]
     best = max(faces, key=lambda f: f.boundingBox().size.width)
-    b = best.boundingBox()  # нормализованный, начало координат слева внизу
+    b = best.boundingBox() # normalized, origin bottom left
     return (int(b.origin.x * w_img), int((1 - b.origin.y - b.size.height) * h_img),
             int(b.size.width * w_img), int(b.size.height * h_img))
 
 
 def detect_face_landmarks(frame):
-    """Самое крупное лицо: ((x, y, w, h), расстояние между зрачками или None, рамка глаз или None) в пикселях, либо None.
+    """Largest face: ((x, y, w, h), pupillary distance or None, eye frame or None) in pixels, or None.
 
-    Один запрос Apple Vision отдаёт и рамку, и точки лица; расстояние между глазами стабильнее ширины рамки.
+    One Apple Vision request returns both the frame and the face points; The distance between the eyes is more stable than the width of the frame.
     """
     ok, buf = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 90])
     data = Foundation.NSData.dataWithBytes_length_(buf.tobytes(), len(buf))
@@ -154,11 +154,11 @@ def detect_face_landmarks(frame):
             xs = [b.origin.x + p.x * b.size.width for p in pts]
             ys = [b.origin.y + p.y * b.size.height for p in pts]
             x0, x1, y0, y1 = min(xs), max(xs), min(ys), max(ys)
-            padx, pady = (x1 - x0) * 0.12, max((y1 - y0) * 0.9, 0.012)  # запас вокруг глаз: брови и веки
+            padx, pady = (x1 - x0) * 0.12, max((y1 - y0) * 0.9, 0.012) # margin around the eyes: eyebrows and eyelids
             eyes = (int((x0 - padx) * w_img), int((1 - (y1 + pady)) * h_img),
                     int((x1 - x0 + 2 * padx) * w_img), int((y1 - y0 + 2 * pady) * h_img))
 
-            def one(region):  # рамка одного глаза (в пикселях кадра)
+            def one(region): # frame of one eye (in frame pixels)
                 ps = [region.normalizedPoints()[i] for i in range(region.pointCount())]
                 px = [b.origin.x + p.x * b.size.width for p in ps]
                 py = [b.origin.y + p.y * b.size.height for p in ps]
@@ -166,16 +166,16 @@ def detect_face_landmarks(frame):
                 pdx, pdy = (ax1 - ax0) * 0.3, max((ay1 - ay0) * 0.9, 0.01)
                 return (int((ax0 - pdx) * w_img), int((1 - (ay1 + pdy)) * h_img),
                         int((ax1 - ax0 + 2 * pdx) * w_img), int((ay1 - ay0 + 2 * pdy) * h_img))
-            eye_l, eye_r = one(le), one(re_)  # «левый» по Vision — тот, что слева в кадре
+            eye_l, eye_r = one(le), one(re_) # “left” according to Vision - the one on the left in the frame
     yaw = best.yaw() if hasattr(best, "yaw") else None
     roll = best.roll() if hasattr(best, "roll") else None
     return box, iod, eyes, eye_l, eye_r, (float(yaw) if yaw is not None else None), (float(roll) if roll is not None else None)
 
 
 def sharpness(frame, face):
-    """Резкость центра лица (дисперсия лапласиана), нормированная к фиксированному размеру."""
+    """Sharpness of the center of the face (Laplacian variance), normalized to a fixed size."""
     x, y, w, h = face
-    # центр лица: глаза-нос, без фона по краям
+    # center of face: eyes-nose, no background around the edges
     x0, x1 = x + int(w * 0.2), x + int(w * 0.8)
     y0, y1 = y + int(h * 0.2), y + int(h * 0.75)
     crop = frame[max(y0, 0):y1, max(x0, 0):x1]

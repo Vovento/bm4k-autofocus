@@ -1,6 +1,6 @@
-"""Проверка сборки и разбора пакетов по примерам из PDF (раздел Example Protocol Packets).
+"""Checking the assembly and parsing of packages using examples from the PDF (section Example Protocol Packets).
 
-Запуск: .venv/bin/python tests/test_protocol.py
+Run: .venv/bin/python tests/test_protocol.py
 """
 import os
 import sys
@@ -32,7 +32,7 @@ def test_roundtrip():
 
 
 def test_camera_message_with_padding():
-    # реальное сообщение камеры: фокусное расстояние 12 мм, int16
+    # real camera message: focal length 12mm, int16
     assert decode(bytes([0, 6, 0, 0, 0, 7, 2, 0, 0x0c, 0x00, 0, 0]))[0] == (0, 7, 2, 0, [12])
 
 
@@ -40,4 +40,4 @@ if __name__ == "__main__":
     for name, fn in list(globals().items()):
         if name.startswith("test_"):
             fn()
-            print("ок:", name)
+            print("ok:", name)

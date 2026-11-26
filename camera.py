@@ -1,6 +1,6 @@
-"""Связь с камерой по BLE: подключение с авто-переподключением, текущее состояние параметров, отправка команд.
+"""Communication with the camera via BLE: connection with auto-reconnection, current state of parameters, sending commands.
 
-CameraLink — настоящая камера; SimLink — симулятор для проверки интерфейса без железа.
+CameraLink is a real camera; SimLink is a simulator for testing interfaces without hardware.
 """
 import asyncio
 import time
@@ -20,16 +20,16 @@ class LinkError(Exception):
 
 class CameraLink:
     def __init__(self):
-        self.state = {}          # "категория.параметр" → список значений, как их прислала камера
+        self.state = {} # "category.parameter" → list of values ​​as sent by the camera
         self.status = "search"   # search | connecting | connected | error
         self.detail = ""
         self.name = ""
         self.client = None
-        self.changed = asyncio.Event()  # поднимается при любом изменении состояния/статуса
-        self.log = []            # последние события для отладочной панели
+        self.changed = asyncio.Event() # Raises on any state/state change
+        self.log = [] # latest events for the debug panel
         self._lock = asyncio.Lock()
 
-    # ---- состояние ----
+    # ---- state ----
     def touch(self):
         self.changed.set()
 
@@ -37,44 +37,44 @@ class CameraLink:
         line = f"{time.strftime('%H:%M:%S')}  {text}"
         self.log.append(line)
         del self.log[:-40]
-        print(line, flush=True)  # и в постоянный журнал службы (~/Library/Logs/BM4K Autofocus.log): виден после перезапуска
+        print(line, flush=True) # and to the permanent service log (~/Library/Logs/BM4K Autofocus.log): visible after restart
         self.touch()
 
     def set_status(self, status, detail=""):
         if (status, detail) != (self.status, self.detail):
             self.status, self.detail = status, detail
-            self.add_log(f"связь: {status} {detail}".strip())
+            self.add_log(f"link: {status} {detail}".strip())
 
     @property
     def connected(self):
         return self.status == "connected"
 
-    # ---- подключение ----
+    # ---- connection ----
     def _on_incoming(self, _, data):
         for cat, par, _dtype, op, values in decode(data):
             self.state[key(cat, par)] = values
         self.touch()
 
     async def run(self):
-        """Бесконечный цикл: искать камеру, подключаться, ждать обрыва, повторять."""
+        """Endless loop: search for camera, connect, wait for break, repeat."""
         while True:
             try:
-                if self.status != "error":  # ошибку (например, нет доступа к Bluetooth) показываем, пока не пройдёт
+                if self.status != "error": # error (for example, no access to Bluetooth) is shown until it passes
                     self.set_status("search")
                 dev = await BleakScanner.find_device_by_filter(
                     lambda d, adv: BM_SERVICE in [u.lower() for u in adv.service_uuids], timeout=10.0)
                 if dev is None:
-                    self.set_status("search", "камера не найдена: включите Bluetooth на камере, отключите телефон")
+                    self.set_status("search", "camera not found: turn on Bluetooth on camera, turn off phone")
                     continue
                 self.set_status("connecting", dev.name or "")
                 dropped = asyncio.Event()
                 async with BleakClient(dev, disconnected_callback=lambda _c: dropped.set()) as client:
-                    self.client, self.name = client, dev.name or "камера"
+                    self.client, self.name = client, dev.name or "camera"
                     await client.start_notify(INCOMING, self._on_incoming)
                     self.set_status("connected")
                     await dropped.wait()
-                self.add_log("связь потеряна")
-            except Exception as e:  # noqa: BLE001 — любая ошибка BLE: показать и переподключиться
+                self.add_log("connection lost")
+            except Exception as e: # noqa: BLE001 - any BLE error: show and reconnect
                 self.set_status("error", f"{type(e).__name__}: {e}")
             finally:
                 self.client = None
@@ -82,17 +82,17 @@ class CameraLink:
 
     async def send(self, data):
         if not self.connected or self.client is None:
-            raise LinkError("камера не подключена")
+            raise LinkError("camera not connected")
         async with self._lock:
             await self.client.write_gatt_char(OUTGOING, data, response=True)
 
 
 class SimLink(CameraLink):
-    """Притворяется камерой: хранит параметры, отвечает на команды."""
+    """Pretends to be a camera: stores parameters, responds to commands."""
 
     def __init__(self):
         super().__init__()
-        self.name = "Симулятор BMPCC 4K"
+        self.name = "BMPCC Simulator 4K"
         self.state = {
             "0.2": [1.0], "0.3": [0.5], "0.4": [3], "0.7": [18],
             "1.0": [24, 0, 9, 0, 0], "1.2": [5600, 0], "1.11": [18000], "1.12": [48], "1.14": [400],
@@ -100,7 +100,7 @@ class SimLink(CameraLink):
         }
 
     async def run(self):
-        self.set_status("connected", "симулятор")
+        self.set_status("connected", "simulator")
         await asyncio.Event().wait()
 
     async def send(self, data):

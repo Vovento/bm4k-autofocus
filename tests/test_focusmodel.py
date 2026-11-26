@@ -1,4 +1,4 @@
-"""Проверка модели фокуса. Запуск: .venv/bin/python tests/test_focusmodel.py"""
+"""Testing the focus model. Run: .venv/bin/python tests/test_focusmodel.py"""
 import os
 import sys
 
@@ -23,14 +23,14 @@ def test_curve_roundtrip_and_monotonic():
 def test_model_median_and_target():
     m = FocusModel()
     assert m.C is None
-    assert not m.add(10389, 0.2, 16) and not m.add(None, 0.2, 16)  # «бесконечность» и пустые данные не принимаются
+    assert not m.add(10389, 0.2, 16) and not m.add(None, 0.2, 16) # “infinity” and empty data is not accepted
     for d, w in ((178, 0.25), (178, 0.24), (212, 0.30), (154, 0.22), (178, 0.25)):
         assert m.add(d, w, 16)
     c = m.C
     assert 2.5 < c < 3.2
-    # лицо шире (ближе) → меньшее показание → меньшая позиция фокуса
+    # face wider (closer) → smaller reading → smaller focus position
     assert m.target_x(0.35, 16) < m.target_x(0.25, 16) < m.target_x(0.18, 16)
-    # при той же ширине, что в обучающем замере, позиция около пика (≈0.79)
+    # with the same width as in the training measurement, the position is near the peak (≈0.79)
     assert abs(m.target_x(0.25, 16) - 0.79) < 0.04
 
 
@@ -39,12 +39,12 @@ def test_cbins_and_shift():
     for d, w in ((178, 0.25), (178, 0.25), (178, 0.25)):
         m.add(d, w, 16)
     base = m.target_x(0.25, 16)
-    m.learn_c(212, 0.25, 16)                  # на этом размере лица реальное расстояние оказалось больше
+    m.learn_c(212, 0.25, 16) # at this face size the actual distance turned out to be greater
     assert m.target_x(0.25, 16) > base
     assert abs(m.c_at(0.25, 16) - 212 * 0.25 / 16) < 1e-6
-    # рядом таблица тоже действует, а далеко возвращается к общему C
+    # near the table also works, but far away it returns to the general C
     assert abs(m.c_at(0.05, 16) - m.C) < 1e-9
-    # сдвиг шкалы просто прибавляется
+    # the scale shift is simply added
     x0 = m.target_x(0.25, 16)
     m.shift = -0.085
     assert abs(m.target_x(0.25, 16) - (x0 - 0.085)) < 1e-9
@@ -54,7 +54,7 @@ def test_lens_slug_and_curve_from_sweep():
     from focusmodel import curve_from_sweep, lens_slug
     assert lens_slug(".64x Sigma DC 18-35/1.7 HSM") == "64x-sigma-dc-18-35-1-7-hsm"
     assert lens_slug("") == "unknown" and lens_slug(None) == "unknown"
-    # показание идёт ступенями; None и «шум вниз» игнорируются
+    # the reading goes in steps; None and "noise down" are ignored
     sweep = [(0.0, None), (0.1, 56), (0.2, 56), (0.3, 56), (0.4, 80), (0.5, 80), (0.6, 70), (0.7, 124), (0.8, 124)]
     assert curve_from_sweep(sweep) == [(0.2, 56), (0.45, 80), (0.75, 124)]
 
@@ -80,11 +80,11 @@ def test_user_data_per_lens_and_legacy_migration():
     import tempfile
     import focusmodel as fm
     path = os.path.join(tempfile.mkdtemp(), "m.json")
-    with open(path, "w") as f:  # старый плоский формат
+    with open(path, "w") as f: # old flat format
         json.dump({"samples": [2.5, 2.7], "cbins": {"-70": 2.6}, "shift": 0.01, "qb": {"5": 25}}, f)
     a = fm.FocusModel(path, lens=fm.LEGACY_SLUG)
     assert abs(a.C - 2.6) < 1e-9 and a.qb == {"5": 25.0}
-    b = fm.FocusModel(path, lens="other-lens")  # другой объектив не получает чужих данных
+    b = fm.FocusModel(path, lens="other-lens") # the other lens does not receive other people's data
     assert b.C is None and b.qb == {}
     b.add(150, 0.2, 12)
     again = fm.FocusModel(path, lens=fm.LEGACY_SLUG)
@@ -105,4 +105,4 @@ if __name__ == "__main__":
     for name, fn in list(globals().items()):
         if name.startswith("test_"):
             fn()
-            print("ок:", name)
+            print("ok:", name)

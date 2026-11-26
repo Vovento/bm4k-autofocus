@@ -94,7 +94,7 @@
 <body>
 <header>
   <h1>BM4K Autofocus</h1>
-  <span class="badge" id="link"><i class="dot"></i><span id="linkText">подключение…</span></span>
+  <span class="badge" id="link"><i class="dot"></i><span id="linkText">connection...</span></span>
   <span class="info" id="mode"></span>
   <span class="spacer"></span>
   <button class="rec" id="rec" aria-pressed="false">● REC</button>
@@ -103,112 +103,112 @@
 <main>
   <div class="col">
     <div class="preview">
-      <img id="pv" alt="Превью камеры" src="/preview.mjpg">
-      <div class="none" id="noVideo" hidden>Нет видео с камеры</div>
+      <img id="pv" alt="Camera preview" src="/preview.mjpg">
+      <div class="none" id="noVideo" hidden>No video from camera</div>
       <span class="tag" id="afTag"></span>
-      <button class="flip" id="flip" aria-pressed="false" title="Зеркальное отображение превью (как в зеркале)">⇋ Зеркало</button>
+      <button class="flip" id="flip" aria-pressed="false" title="Mirror preview (like in a mirror)">⇋ Mirror</button>
     </div>
 
     <div class="card" id="afCard">
-      <h2>Автофокус <span id="afState">выкл</span></h2>
+      <h2>Autofocus <span id="afState">off</span></h2>
       <div class="row">
-        <label class="switch"><input type="checkbox" id="afEnable" aria-label="Следящий автофокус"><i></i></label>
-        <span>Следить за лицом</span>
+        <label class="switch"><input type="checkbox" id="afEnable" aria-label="Tracking autofocus"><i></i></label>
+        <span>Follow face</span>
         <span class="spacer"></span>
-        <button id="afNow">Навести сейчас</button>
+        <button id="afNow">Focus now</button>
       </div>
       <div class="row">
-        <span class="lbl">Отклик</span>
+        <span class="lbl">Response</span>
         <div class="seg" id="afProfile">
-          <button data-v="soft">Мягко</button><button data-v="normal">Норма</button><button data-v="fast">Быстро</button>
+          <button data-v="soft">Soft</button><button data-v="normal">Normal</button><button data-v="fast">Fast</button>
         </div>
       </div>
       <div class="row">
-        <span class="lbl">Метод</span>
+        <span class="lbl">Method</span>
         <div class="seg" id="afMode">
-          <button data-v="precise" title="Фокус по размеру лица и уточнение по резкости: быстро, плавно, работает и не по центру">Точный</button><button data-v="camera" title="Встроенный AF камеры: ищет резкость по центру кадра">Камера AF</button>
+          <button data-v="precise" title="Focus from face size, then refine by sharpness; works off center">Precise</button><button data-v="camera" title="Built-in camera AF focuses near the center of the frame">Camera AF</button>
         </div>
       </div>
-      <div class="row" style="margin-top:14px"><span class="lbl">Резкость</span><div class="meter" style="flex:1"><b id="sharpBar"></b></div></div>
+      <div class="row" style="margin-top:14px"><span class="lbl">Sharpness</span><div class="meter" style="flex:1"><b id="sharpBar"></b></div></div>
       <div class="stat">
-        <div><b id="afSharp">–</b>резкость / эталон</div>
-        <div><b id="afLast">–</b>последняя наводка</div>
-        <div><b id="afCount">0</b>наводок, <span id="afFps">0</span> кадр/с</div>
+        <div><b id="afSharp">–</b>sharpness / reference</div>
+        <div><b id="afLast">–</b>last focus</div>
+        <div><b id="afCount">0</b>focus operations, <span id="afFps">0</span> fps</div>
       </div>
-      <div class="note" id="afNote">Камера наводится по центру кадра: лицо держите ближе к центру.</div>
+      <div class="note" id="afNote">The camera is aimed at the center of the frame: keep your face closer to the center.</div>
       <div class="note" id="afDbg" hidden></div>
     </div>
 
     <div class="card" id="audioCard">
-      <h2>Звук</h2>
-      <div class="row"><span class="lbl">Микрофон</span><input type="range" id="mic" min="0" max="1" step="0.01" aria-label="Уровень микрофона"><span class="val" id="micVal">–</span></div>
-      <div class="row"><span class="lbl">Вход</span>
-        <select id="micInput" aria-label="Тип входа">
-          <option value="0">Встроенный микрофон</option><option value="1">Линейный вход</option>
-          <option value="2">Микрофон, низкий уровень</option><option value="3">Микрофон, высокий уровень</option>
+      <h2>Sound</h2>
+      <div class="row"><span class="lbl">Microphone</span><input type="range" id="mic" min="0" max="1" step="0.01" aria-label="Microphone level"><span class="val" id="micVal">–</span></div>
+      <div class="row"><span class="lbl">Input</span>
+        <select id="micInput" aria-label="Input Type">
+          <option value="0">Built-in microphone</option><option value="1">Line input</option>
+          <option value="2">Microphone, low level</option><option value="3">Microphone, high level</option>
         </select></div>
     </div>
 
     <div class="card" id="svcCard">
-      <h2>Служба</h2>
+      <h2>Service</h2>
       <div class="row">
-        <label class="switch"><input type="checkbox" id="autostart" aria-label="Запускать при входе в систему"><i></i></label>
-        <span>Запускать при входе в систему</span>
+        <label class="switch"><input type="checkbox" id="autostart" aria-label="Start at login"><i></i></label>
+        <span>Run at login</span>
       </div>
-      <div class="row"><button class="danger" id="quit">Остановить службу</button></div>
-      <div class="note">Служба держит связь с камерой и наводит фокус в фоне. После остановки запустить её можно иконкой BM4K Autofocus в Dock.</div>
+      <div class="row"><button class="danger" id="quit">Stop service</button></div>
+      <div class="note">The service maintains the camera connection and controls focus in the background. Restart it from the BM4K Autofocus icon in the Dock.</div>
     </div>
   </div>
 
   <div class="col">
     <div class="card">
-      <h2>Диафрагма <span id="zoomInfo"></span></h2>
+      <h2>Aperture <span id="zoomInfo"></span></h2>
       <div class="big" id="fVal">–</div>
       <div class="row">
-        <button id="apOpen" title="Открыть на 1/3 стопа">◀ Шире</button>
-        <button id="apClose" title="Закрыть на 1/3 стопа">Уже ▶</button>
+        <button id="apOpen" title="Open 1/3 stop">◀ Wider</button>
+        <button id="apClose" title="Close by 1/3 stop">Narrower ▶</button>
         <span class="spacer"></span>
-        <button id="autoIris">Авто диафрагма</button>
+        <button id="autoIris">Auto iris</button>
       </div>
       <div class="note" id="aiNote" hidden></div>
-      <div class="row"><span class="lbl">Шире</span><input type="range" id="apAv" min="0.5" max="8" step="0.05" aria-label="Диафрагма: слева шире, справа уже"><span class="lbl" style="text-align:right">Уже</span></div>
+      <div class="row"><span class="lbl">Wider</span><input type="range" id="apAv" min="0.5" max="8" step="0.05" aria-label="Aperture: wider on the left, narrower on the right"><span class="lbl" style="text-align:right">Narrower</span></div>
     </div>
 
     <div class="card">
-      <h2>Выдержка <span id="shSpeed"></span></h2>
+      <h2>Shutter speed <span id="shSpeed"></span></h2>
       <div class="big" id="shAngle">–</div>
       <div class="chips" id="shChips"></div>
-      <div class="row"><span class="lbl">Угол</span><input type="range" id="shRange" min="11.25" max="360" step="0.25" aria-label="Угол затвора"><span class="val" id="shVal">–</span></div>
+      <div class="row"><span class="lbl">Angle</span><input type="range" id="shRange" min="11.25" max="360" step="0.25" aria-label="Shutter Angle"><span class="val" id="shVal">–</span></div>
     </div>
 
     <div class="card">
       <h2>ISO</h2>
       <div class="big" id="isoVal">–</div>
       <div class="chips" id="isoChips"></div>
-      <div class="note">Родные значения этой камеры — 400 и 3200: там меньше шума.</div>
+      <div class="note">The camera's native ISO values are 400 and 3200, which may give less noise.</div>
     </div>
 
     <div class="card">
-      <h2>Баланс белого</h2>
+      <h2>White balance</h2>
       <div class="big" id="wbVal">–<small id="tintVal"></small></div>
       <div class="chips" id="wbChips"></div>
-      <div class="row"><span class="lbl">Температура</span><input type="range" id="kelvin" min="2500" max="10000" step="50" aria-label="Цветовая температура"></div>
-      <div class="row"><span class="lbl">Оттенок</span><input type="range" id="tint" min="-50" max="50" step="1" aria-label="Оттенок"></div>
-      <div class="row"><button id="autoWb">Авто баланс белого</button></div>
+      <div class="row"><span class="lbl">Temperature</span><input type="range" id="kelvin" min="2500" max="10000" step="50" aria-label="Color temperature"></div>
+      <div class="row"><span class="lbl">Tint</span><input type="range" id="tint" min="-50" max="50" step="1" aria-label="Tint"></div>
+      <div class="row"><button id="autoWb">Auto white balance</button></div>
     </div>
   </div>
 </main>
 
 <div id="gone" hidden>
   <div class="box">
-    <h2>Служба остановлена</h2>
-    <p>Автофокус и управление камерой не работают. Чтобы запустить службу снова, нажмите кнопку или иконку BM4K Autofocus в Dock. Страница подключится сама.</p>
-    <a class="btn" href="bm4k://start">Запустить службу</a>
+    <h2>Service stopped</h2>
+    <p>Autofocus and camera controls do not work. To start the service again, click the BM4K Autofocus button or icon in the Dock. The page will connect itself.</p>
+    <a class="btn" href="bm4k://start">Start service</a>
   </div>
 </div>
 
 <details id="dbg">
-  <summary>Отладка: что присылает камера и что мы ей отправляли</summary>
+  <summary>Debugging: what the camera sends and what we sent it</summary>
   <pre id="dbgLog"></pre>
   <pre id="dbgRaw"></pre>
 </details>
@@ -218,7 +218,7 @@
 const $ = id => document.getElementById(id);
 const ISO = [100, 200, 400, 800, 1250, 1600, 3200, 6400, 12800];
 const ANGLES = [45, 90, 144, 172.8, 180, 270, 360];
-const WB = [["Лампа", 3200], ["Люм.", 4000], ["Солнце", 5600], ["Облачно", 6500], ["Тень", 7500]];
+const WB = [["Tungsten", 3200], ["Fluorescent", 4000], ["Daylight", 5600], ["Cloudy", 6500], ["Shade", 7500]];
 const CODEC = ["CinemaDNG", "DNxHD", "ProRes", "BRAW"];
 const BRAW = {0: "Q0", 7: "Q1", 8: "Q3", 1: "Q5", 2: "3:1", 3: "5:1", 4: "8:1", 5: "12:1"};
 const DIMS = {2: "720", 3: "1080", 4: "2K DCI", 5: "2K", 6: "UHD", 8: "4K DCI", 9: "4K"};
@@ -232,20 +232,20 @@ function connect() {
   ws.onopen = () => { clearTimeout(goneTimer); $("gone").hidden = true; reloadPreview(); };
   ws.onmessage = e => { S = JSON.parse(e.data); render(); };
   ws.onclose = () => {
-    setLink("bad", "нет связи со службой");
-    goneTimer = setTimeout(() => { $("gone").hidden = false; }, 2000);  // короткий перезапуск оверлей не показывает
+    setLink("bad", "no connection to service");
+    goneTimer = setTimeout(() => { $("gone").hidden = false; }, 2000);  // short restart does not show overlay
     setTimeout(connect, 1000);
   };
 }
 
-// поток превью обрывается при перезапуске службы или камеры: открываем его заново
+// the preview stream is interrupted when the service or camera is restarted: open it again
 function reloadPreview() { $("pv").src = "/preview.mjpg?" + Date.now(); }
 let hadVideo = false;
 
 function setLink(cls, text) { $("link").className = "badge " + cls; $("linkText").textContent = text; }
 const fmt = (v, d = 0) => v == null ? "–" : Number(v).toFixed(d);
 
-// ползунок: во время перетаскивания не перезаписываем значение, команды шлём не чаще раза в 80 мс
+// slider: do not overwrite the value while dragging, send commands no more than once every 80 ms
 function slider(id, action, toValue, show) {
   const el = $(id); let last = 0, timer = null;
   const push = () => { send(action, toValue(el.value)); last = Date.now(); timer = null; };
@@ -271,8 +271,8 @@ const mark = (id, test) => [...$(id).children].forEach(b => b.classList.toggle("
 function render() {
   const d = S.d, link = S.link;
   const ok = link.status === "connected";
-  setLink(ok ? "ok" : link.status === "error" ? "bad" : "", ok ? link.name || "камера подключена"
-    : ({search: "поиск камеры…", connecting: "подключение…", error: "ошибка связи"}[link.status] || link.status)
+  setLink(ok ? "ok" : link.status === "error" ? "bad" : "", ok ? link.name || "camera connected"
+    : ({search: "searching for camera...", connecting: "connecting...", error: "connection error"}[link.status] || link.status)
     + (link.detail ? ": " + link.detail : ""));
   document.querySelectorAll(".card").forEach(c => c.classList.toggle("off", !ok && c.id !== "afCard"));
 
@@ -289,7 +289,7 @@ function render() {
   $("mode").textContent = parts.join(" · ");
 
   $("rec").classList.toggle("on", d.rec); $("rec").setAttribute("aria-pressed", d.rec);
-  $("rec").textContent = d.rec ? "■ СТОП" : "● REC";
+  $("rec").textContent = d.rec ? "■ STOP" : "● REC";
 
   const fnum = d.f_text ? Number(d.f_text.replace(/[^0-9.]/g, "")) : d.f;
   $("fVal").textContent = fnum ? "f/" + fnum : "–";
@@ -300,7 +300,7 @@ function render() {
 
   $("shAngle").innerHTML = d.shutter_angle == null ? "–" : fmt(d.shutter_angle, d.shutter_angle % 1 ? 1 : 0) + "°";
   const speed = fps && d.shutter_angle ? Math.round(fps * 360 / d.shutter_angle) : d.shutter_speed;
-  $("shSpeed").textContent = speed ? "1/" + speed + " с" : "";
+  $("shSpeed").textContent = speed ? "1/" + speed + " s" : "";
   setSlider("shRange", d.shutter_angle);
   $("shVal").textContent = fmt(d.shutter_angle, 1) + "°";
   mark("shChips", v => d.shutter_angle != null && Math.abs(v - d.shutter_angle) < 0.3);
@@ -309,14 +309,14 @@ function render() {
   mark("isoChips", v => v === d.iso);
 
   $("wbVal").firstChild.textContent = d.kelvin == null ? "–" : d.kelvin + " K";
-  $("tintVal").textContent = d.tint == null ? "" : "оттенок " + (d.tint > 0 ? "+" : "") + d.tint;
+  $("tintVal").textContent = d.tint == null ? "" : "tint " + (d.tint > 0 ? "+" : "") + d.tint;
   setSlider("kelvin", d.kelvin); setSlider("tint", d.tint);
   mark("wbChips", v => d.kelvin != null && Math.abs(v - d.kelvin) < 60);
 
   setSlider("mic", d.mic); $("micVal").textContent = d.mic == null ? "–" : Math.round(d.mic * 100) + "%";
   if (d.mic_input != null && document.activeElement !== $("micInput")) $("micInput").value = d.mic_input;
 
-  // видео и автофокус
+  // video and autofocus
   $("autostart").checked = !!S.autostart;
   if (S.video && !hadVideo) reloadPreview();
   hadVideo = S.video;
@@ -331,28 +331,28 @@ function render() {
     [...$("afProfile").children].forEach(b => b.classList.toggle("sel", b.dataset.v === af.profile));
     [...$("afMode").children].forEach(b => b.classList.toggle("sel", b.dataset.v === af.mode));
     const precise = af.mode === "precise";
-    $("afNote").textContent = precise ? "Фокус по лицу, работает и не по центру кадра. Если лицо закрыто предметом, фокус переходит на предмет в центре, а когда лицо вернулось, возвращается на него. «Навести сейчас» удерживает фокус на центре 10 секунд."
-      : "Камера наводится по центру кадра: лицо держите ближе к центру.";
+    $("afNote").textContent = precise ? "Face tracking also works off center. If the face is hidden, focus moves to the object at the center and returns when the face reappears. Focus now holds the center for 10 seconds."
+      : "Camera AF focuses near the center of the frame. Keep your face near the center.";
     $("afDbg").hidden = !precise;
     const q = af.quality;
-    $("afDbg").textContent = precise ? (af.lens ? "объектив " + af.lens + " · " : "") + "позиция " + (af.x == null ? "–" : af.x) + " · модель C " + (af.C == null ? "не обучена" : af.C)
-      + (q ? " · в фокусе " + (q.in_focus == null ? "–" : q.in_focus + "%") + " · мигание " + q.blink + "% · команд " + q.cmds + "/мин · уточнений " + q.refines + "/мин"
-        + " · шум размера: рамка " + (q.noise_box == null ? "–" : q.noise_box + "%") + ", глаза " + (q.noise_eyes == null ? "–" : q.noise_eyes + "%")
-        + " · шум резкости: лицо " + (q.noise_sf == null ? "–" : q.noise_sf + "%") + ", глаза " + (q.noise_se == null ? "–" : q.noise_se + "%") : "") : "";
+    $("afDbg").textContent = precise ? (af.lens ? "lens " + af.lens + " · " : "") + "position " + (af.x == null ? "–" : af.x) + " · model C " + (af.C == null ? "not trained" : af.C)
+      + (q ? " · in focus " + (q.in_focus == null ? "–" : q.in_focus + "%") + " · blinking " + q.blink + "% · commands " + q.cmds + "/min · refinements " + q.refines + "/min"
+        + " · size noise: frame " + (q.noise_box == null ? "–" : q.noise_box + "%") + ", eyes " + (q.noise_eyes == null ? "–" : q.noise_eyes + "%")
+        + " · sharpness noise: face " + (q.noise_sf == null ? "–" : q.noise_sf + "%") + ", eyes " + (q.noise_se == null ? "–" : q.noise_se + "%") : "") : "";
     $("afSharp").textContent = af.sharp == null ? "–" : af.sharp + " / " + af.base;
-    $("afLast").textContent = af.last_af_s == null ? "–" : af.last_af_s + " с";
+    $("afLast").textContent = af.last_af_s == null ? "–" : af.last_af_s + " s";
     $("afCount").textContent = af.af_count; $("afFps").textContent = af.fps;
     const r = af.sharp && af.base ? Math.min(af.sharp / af.base, 1.2) / 1.2 : 0;
     $("sharpBar").style.width = Math.round(r * 100) + "%";
     $("sharpBar").style.background = r < 0.45 ? "var(--bad)" : r < 0.6 ? "var(--warn)" : "var(--ok)";
   }
   if ($("dbg").open) {
-    $("dbgLog").textContent = S.log.join("\n") || "(пока пусто)";
+    $("dbgLog").textContent = S.log.join("\n") || "(still empty)";
     $("dbgRaw").textContent = Object.entries(S.raw).map(([k, v]) => k.padEnd(6) + JSON.stringify(v)).join("\n");
   }
 }
 
-// ---- элементы управления ----
+// ---- controls ----
 chips("isoChips", ISO.map(v => [v, v]), v => send("iso", v));
 chips("shChips", ANGLES.map(v => [v + "°", v]), v => send("shutter_angle", v));
 chips("wbChips", WB.map(([n, k]) => [`${n} ${k}`, k]), k => send("wb", {kelvin: k, tint: S.d.tint || 0}));
@@ -375,19 +375,19 @@ $("afMode").onclick = e => e.target.dataset.v && send("af_mode", e.target.datase
 $("afProfile").onclick = e => e.target.dataset.v && send("af_profile", e.target.dataset.v);
 $("autostart").onchange = e => send("autostart", e.target.checked);
 $("quit").onclick = () => {
-  if (confirm("Остановить службу?\n\nАвтофокус и управление камерой перестанут работать, пока служба не запущена снова (иконка BM4K Autofocus в Dock).")) send("quit");
+  if (confirm("Stop the service?\n\nAutofocus and camera control will stop working until the service is started again (BM4K Autofocus icon in the Dock")) send("quit");
 };
 $("micInput").onchange = e => send("mic_input", Number(e.target.value));
 $("dbg").addEventListener("toggle", () => S && render());
 
-// зеркало превью: запоминается в браузере, по умолчанию включено
+// mirror preview: remembered in the browser, enabled by default
 function setMirror(on) {
   document.querySelector(".preview").classList.toggle("mirror", on);
   $("flip").setAttribute("aria-pressed", on);
-  try { localStorage.setItem("bm4k-mirror", on ? "1" : "0"); } catch (e) { /* без сохранения */ }
+  try { localStorage.setItem("bm4k-mirror", on ? "1" : "0"); } catch (e) { /* without saving */ }
 }
 let mirrorOn = true;
-try { mirrorOn = localStorage.getItem("bm4k-mirror") !== "0"; } catch (e) { /* по умолчанию вкл. */ }
+try { mirrorOn = localStorage.getItem("bm4k-mirror") !== "0"; } catch (e) { /* default on. */ }
 setMirror(mirrorOn);
 $("flip").onclick = () => setMirror($("flip").getAttribute("aria-pressed") !== "true");
 

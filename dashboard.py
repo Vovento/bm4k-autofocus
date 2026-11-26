@@ -1,9 +1,9 @@
-"""Дашборд управления BMPCC 4K: Bluetooth-управление камерой, следящий автофокус и превью в браузере.
+"""BMPCC 4K control dashboard: Bluetooth camera control, autofocus tracking and browser preview.
 
-Запуск из Terminal.app:  python dashboard.py [--cam 0] [--port 8765]
-  --sim   симулятор вместо камеры (проверка интерфейса без железа)
-  --no-browser   не открывать страницу (режим фоновой службы)
-Страница открывается на http://127.0.0.1:8765 (доступна только с этого Mac).
+Run from Terminal.app: python dashboard.py [--cam 0] [--port 8765]
+  --sim simulator instead of camera (interface check without hardware)
+  --no-browser do not open the page (background service mode)
+The page opens to http://127.0.0.1:8765 (only accessible from this Mac).
 """
 import argparse
 import asyncio
@@ -26,8 +26,8 @@ from protocol import packet
 from video import VideoHub
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-AUTO_IRIS_TARGET = 118   # целевая средняя яркость лица (0–255) в картинке камеры
-AUTO_IRIS_GAMMA = 2.2    # яркость изображения ~ свет^(1/гамма)
+AUTO_IRIS_TARGET = 118 # target average face brightness (0-255) in the camera picture
+AUTO_IRIS_GAMMA = 2.2 # image brightness ~ light^(1/gamma)
 SETTINGS = os.path.join(HERE, "settings.json")
 DEFAULTS = {"af_enabled": True, "af_profile": "normal", "af_mode": "precise"}
 
@@ -41,14 +41,14 @@ def load_settings():
 
 
 def build(action, v):
-    """Команда интерфейса → пакет Camera Control (или None, если действие особое)."""
+    """Interface command → Camera Control package (or None, if the action is special)."""
     table = {
         "iso": lambda: packet(1, 14, 3, [int(v)]),
         "shutter_angle": lambda: packet(1, 11, 3, [round(float(v) * 100)]),
         "wb": lambda: packet(1, 2, 2, [int(v["kelvin"]), int(v["tint"])]),
         "auto_wb": lambda: packet(1, 3, 0),
         "aperture_av": lambda: packet(0, 2, 128, [float(v)]),
-        "focus_assign": lambda: packet(0, 0, 128, [float(v)]),  # служебное: абсолютный фокус 0..1
+        "focus_assign": lambda: packet(0, 0, 128, [float(v)]), # utility: absolute focus 0..1
         "mic_level": lambda: packet(2, 0, 128, [float(v)]),
         "mic_input": lambda: packet(2, 4, 1, [int(v)]),
     }
@@ -56,7 +56,7 @@ def build(action, v):
 
 
 def stop_process():
-    """Завершить дашборд. Как служба (родитель — наш bash-скрипт): убить всю группу, чтобы скрипт не перезапустил его."""
+    """End the dashboard. As a service (parent is our bash script): kill the entire group so that the script does not restart it."""
     parent = subprocess.run(["ps", "-o", "command=", "-p", str(os.getppid())], capture_output=True, text=True).stdout
     if "BM4K Autofocus Service" in parent:
         os.killpg(os.getpgid(0), signal.SIGTERM)
@@ -76,7 +76,7 @@ class App:
         self._ai_busy = False
 
     def start(self):
-        """Применить сохранённые настройки (вызывать уже внутри работающего цикла событий)."""
+        """Apply saved settings (call already inside the running event loop)."""
         if self.settings["af_enabled"]:
             self.af.set_enabled(True)
 
@@ -86,7 +86,7 @@ class App:
             with open(SETTINGS, "w") as f:
                 json.dump(self.settings, f, indent=1)
         except OSError as e:
-            self.link.add_log(f"настройки не сохранены: {e}")
+            self.link.add_log(f"settings not saved: {e}")
 
     def snapshot(self):
         s = self.link.state
@@ -137,10 +137,10 @@ class App:
         elif action == "af_now":
             await self.af.af_now()
         elif action == "aperture_step":
-            # сдвиг по 1/3 стопа через абсолютное значение (как ползунок): камера не принимает «смещение»
+            # shift by 1/3 stop via absolute value (like a slider): the camera does not accept "shift"
             av = (self.link.state.get("0.2") or [None])[0]
             if av is None:
-                raise ValueError("камера ещё не прислала диафрагму")
+                raise ValueError("the camera has not sent the aperture yet")
             await self.link.send(packet(0, 2, 128, [max(0.0, min(16.0, av + float(v)))]))
         elif action == "auto_iris":
             if not self._ai_busy:
@@ -149,16 +149,16 @@ class App:
             asyncio.ensure_future(self.run_sweep(v or {}))
         elif action == "backlash":
             asyncio.ensure_future(self.run_backlash(v or {}))
-        elif action == "save_trace":  # запись по кадрам за последние минуты для разбора: trace.json рядом с программой
+        elif action == "save_trace": # record frame by frame for the last minutes for parsing: trace.json next to the program
             rows = list(self.af.trace)
             with open(os.path.join(HERE, "trace.json"), "w") as f:
                 json.dump({"rows": rows, "fields": ["t", "size", "sharp", "x", "state", "cmds"]}, f)
-            self.link.add_log(f"запись по кадрам сохранена: {len(rows)} кадров")
+            self.link.add_log(f"frame record saved: {len(rows)} frames")
         elif action == "autostart":
             await asyncio.get_running_loop().run_in_executor(None, autostart.set_enabled, bool(v))
             self.link.touch()
         elif action == "quit":
-            self.link.add_log("остановка службы по кнопке")
+            self.link.add_log("stop the service by button")
             asyncio.get_running_loop().call_later(0.4, stop_process)
         elif action == "record":
             current = list(self.link.state.get("10.1") or [0, 0])
@@ -167,7 +167,7 @@ class App:
         else:
             pkt = build(action, v)
             if pkt is None:
-                raise ValueError(f"неизвестное действие {action}")
+                raise ValueError(f"unknown action {action}")
             await self.link.send(pkt)
         self.link.add_log(f"→ {action} {v if v is not None else ''}")
 
@@ -177,7 +177,7 @@ class App:
         try:
             await self.af.backlash_test(float(p.get("x", 0.8)))
         except LinkError as e:
-            self.link.add_log(f"проверка люфта не выполнена: {e}")
+            self.link.add_log(f"backlash check failed: {e}")
         finally:
             if was:
                 self.af.set_enabled(True)
@@ -189,15 +189,15 @@ class App:
         try:
             await self.af.sweep(float(p.get("lo", 0.7)), float(p.get("hi", 0.95)), float(p.get("step", 0.01)))
         except LinkError as e:
-            self.link.add_log(f"перебор не выполнен: {e}")
+            self.link.add_log(f"search failed: {e}")
         finally:
             if was:
                 self.af.set_enabled(True)
             self.link.touch()
 
-    # ---- программная авто-диафрагма ----
+    # ---- software auto iris ----
     def region_luma(self):
-        """Средняя яркость лица (или центра кадра, если лица нет) в картинке камеры, 0–255."""
+        """Average brightness of the face (or center of the frame, if there is no face) in the camera image, 0–255."""
         frame, _ = self.grab.latest()
         if frame is None:
             return None
@@ -213,12 +213,12 @@ class App:
 
     def _set_ai(self, text):
         self.ai_state = text
-        self.link.add_log(f"авто диафрагма: {text}")
+        self.link.add_log(f"auto iris: {text}")
 
     async def auto_iris(self):
-        """Подобрать диафрагму так, чтобы лицо имело целевую яркость. Несколько шагов с проверкой по картинке."""
+        """Select the aperture so that the face has the target brightness. Several steps with checking the picture."""
         self._ai_busy = True
-        self._set_ai("подбираю…")
+        self._set_ai("I'm selecting...")
         try:
             last_asked = None
             for _ in range(8):
@@ -230,22 +230,22 @@ class App:
                     await asyncio.sleep(0.08)
                 av = (self.link.state.get("0.2") or [None])[0]
                 if not samples or av is None:
-                    self._set_ai("нет картинки или данных о диафрагме")
+                    self._set_ai("no picture or aperture data")
                     return
                 if last_asked is not None and abs(last_asked - av) > 0.15:
-                    self._set_ai("диафрагма упёрлась в предел объектива")
+                    self._set_ai("the aperture has reached the lens limit")
                     return
-                # недостаток света в стопах; 0.8 — запас, чтобы не раскачиваться
+                # lack of light in the feet; 0.8 - margin so as not to sway
                 ev = 0.8 * AUTO_IRIS_GAMMA * math.log2(AUTO_IRIS_TARGET / max(statistics.median(samples), 1.0))
                 if abs(ev) < 0.2:
-                    self._set_ai(f"готово, f/{math.sqrt(2 ** av):.1f}")
+                    self._set_ai(f"done, f/{math.sqrt(2 ** av):.1f}")
                     return
-                last_asked = max(0.0, min(16.0, av - ev))  # свет +1 стоп = AV −1
+                last_asked = max(0.0, min(16.0, av - ev)) # light +1 stop = AV −1
                 await self.link.send(packet(0, 2, 128, [last_asked]))
                 await asyncio.sleep(1.0)
-            self._set_ai("готово")
+            self._set_ai("ready")
         except LinkError as e:
-            self._set_ai(f"не отправлено: {e}")
+            self._set_ai(f"not sent: {e}")
         finally:
             self._ai_busy = False
             self.link.touch()
@@ -265,15 +265,15 @@ class App:
                     try:
                         await self.handle(json.loads(msg.data))
                     except LinkError as e:
-                        self.link.add_log(f"не отправлено: {e}")
+                        self.link.add_log(f"not sent: {e}")
                     except Exception as e:  # noqa: BLE001
-                        self.link.add_log(f"ошибка команды: {type(e).__name__}: {e}")
+                        self.link.add_log(f"command error: {type(e).__name__}: {e}")
         finally:
             self.clients.discard(ws)
         return ws
 
     async def autosave_trace(self):
-        """Раз в 20 секунд сохраняет запись по кадрам в trace.json, чтобы перезапуск службы её не стирал."""
+        """Once every 20 seconds, it saves a frame-by-frame record in trace.json so that restarting the service does not erase it."""
         loop = asyncio.get_running_loop()
 
         def dump():
@@ -328,7 +328,7 @@ class App:
                 await resp.write(b"--frame\r\nContent-Type: image/jpeg\r\nContent-Length: %d\r\n\r\n" % len(jpg)
                                  + jpg + b"\r\n")
                 await asyncio.sleep(0.07)
-        except Exception:  # noqa: BLE001 — клиент закрыл страницу
+        except Exception: # noqa: BLE001 - the client closed the page
             pass
         return resp
 
@@ -336,17 +336,17 @@ class App:
 async def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--cam", type=int, default=None,
-                    help="номер Blackmagic в OpenCV; другие марки отклоняются")
+                    help="Blackmagic number in OpenCV; other brands are rejected")
     ap.add_argument("--port", type=int, default=8765)
-    ap.add_argument("--sim", action="store_true", help="симулятор камеры и картинки")
+    ap.add_argument("--sim", action="store_true", help="camera and pictures simulator")
     ap.add_argument("--no-browser", action="store_true")
     args = ap.parse_args()
-    sys.stdout.reconfigure(line_buffering=True)  # журнал службы без задержки
+    sys.stdout.reconfigure(line_buffering=True) # service log without delay
 
     link = SimLink() if args.sim else CameraLink()
     hub = VideoHub(sim=args.sim, index=args.cam, on_change=link.touch)
     prev = os.path.join(HERE, "trace.json")
-    if os.path.exists(prev):  # запись прошлого запуска не теряем: перезапуск службы иначе стёр бы то, что нужно разобрать
+    if os.path.exists(prev): # we don’t lose the record of the last launch: restarting the service would otherwise erase what needs to be parsed
         try:
             os.replace(prev, os.path.join(HERE, "trace_prev.json"))
         except OSError:
@@ -359,7 +359,7 @@ async def main():
     await runner.setup()
     await web.TCPSite(runner, "127.0.0.1", args.port).start()
     url = f"http://127.0.0.1:{args.port}"
-    print(f"Дашборд: {url}  (Ctrl+C — остановить)")
+    print(f"Dashboard: {url} (Ctrl+C - stop)")
     if not args.no_browser:
         webbrowser.open(url)
     app_state.start()
@@ -369,4 +369,4 @@ async def main():
 try:
     asyncio.run(main())
 except KeyboardInterrupt:
-    print("\nОстановлено.")
+    print("\nStopped.")

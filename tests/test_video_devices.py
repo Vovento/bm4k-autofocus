@@ -1,6 +1,6 @@
-"""Проверка соответствия имён камер индексам OpenCV AVFoundation.
+"""Checking the correspondence of camera names with OpenCV AVFoundation indexes.
 
-Запуск: .venv/bin/python tests/test_video_devices.py
+Run: .venv/bin/python tests/test_video_devices.py
 """
 import os
 import sys
@@ -37,7 +37,7 @@ class FakeAVFoundation:
 
 
 def test_devices_match_opencv_unique_id_order():
-    # AVFoundation может вернуть MacBook раньше Pocket, а OpenCV сортирует по uniqueID.
+    # AVFoundation can return MacBook before Pocket, and OpenCV sorts by uniqueID.
     CaptureDevice.by_type = {
         "video": [Device("MacBook", "6C70"), Device("Pocket Cinema Camera 4K", "0x111")],
         "muxed": [Device("Capture Card", "3A20")],
@@ -49,7 +49,7 @@ def test_devices_match_opencv_unique_id_order():
 
 
 def test_only_blackmagic_cameras_are_allowed():
-    names = ["Камера (MacBook Pro)", "Pocket Cinema Camera 6K Pro", "Камера (iPhone)"]
+    names = ["Camera (MacBook Pro)", "Pocket Cinema Camera 6K Pro", "Camera (iPhone)"]
     assert blackmagic_camera_index(names) == 1
     assert blackmagic_camera_index(names, requested=1) == 1
     assert blackmagic_camera_index(names, requested=0) is None
@@ -62,4 +62,4 @@ if __name__ == "__main__":
     for name, fn in list(globals().items()):
         if name.startswith("test_"):
             fn()
-            print("ок:", name)
+            print("ok:", name)

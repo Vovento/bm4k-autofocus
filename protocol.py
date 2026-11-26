@@ -1,4 +1,4 @@
-"""Протокол Blackmagic Camera Control: сборка команд и разбор сообщений камеры (см. Документация/)."""
+"""Blackmagic Camera Control Protocol: assembling commands and parsing camera messages (see Documentation/)."""
 import struct
 
 SIZES = {0: 1, 1: 1, 2: 2, 3: 4, 4: 8, 128: 2}
@@ -10,7 +10,7 @@ ASSIGN, OFFSET = 0, 1
 def _encode(dtype, values):
     if dtype == 5:
         return str(values).encode("utf-8")
-    if dtype == 128:  # fixed 5.11: значение × 2048
+    if dtype == 128: # fixed 5.11: value × 2048
         return b"".join(struct.pack("<h", round(max(-16.0, min(15.9995, float(v))) * 2048)) for v in values)
     if dtype == 0:
         return bytes(1 if v else 0 for v in values)
@@ -18,7 +18,7 @@ def _encode(dtype, values):
 
 
 def packet(category, parameter, dtype, values=(), op=ASSIGN, dest=255):
-    """Сообщение «change configuration»: dest, длина, команда 0, резерв + категория, параметр, тип, операция + данные."""
+    """Message "change configuration": dest, length, command 0, reserve + category, parameter, type, operation + data."""
     body = bytes([category, parameter, dtype, op]) + _encode(dtype, values)
     msg = bytes([dest, len(body), 0, 0]) + body
     return msg + b"\x00" * (-len(msg) % 4)
@@ -39,7 +39,7 @@ def _decode(dtype, raw):
 
 
 def decode(data):
-    """Разобрать пакет с одним и более сообщений: [(категория, параметр, тип, операция, значения)]."""
+    """Parse a package with one or more messages: [(category, parameter, type, operation, values)]."""
     out, i = [], 0
     while i + 4 <= len(data):
         length = data[i + 1]

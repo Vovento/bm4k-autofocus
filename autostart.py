@@ -1,4 +1,4 @@
-"""Запуск службы при входе в систему: LaunchAgent, который через `open` стартует приложение BM4K Autofocus Service."""
+"""Starting a service at login: LaunchAgent, which starts the BM4K Autofocus Service application via `open`."""
 import os
 import plistlib
 import subprocess
@@ -14,7 +14,7 @@ def enabled():
 
 
 def set_enabled(on):
-    """Включить или выключить автозапуск. Уже работающую службу не трогает."""
+    """Enable or disable autorun. Does not affect an already running service."""
     target = f"gui/{os.getuid()}"
     subprocess.run(["launchctl", "bootout", f"{target}/{LABEL}"], capture_output=True)
     if not on:

@@ -65,5 +65,5 @@
  ],
  "sigma_ln": 0.233,
  "n_ref": 1.2,
- "notes": "Кривая снята перебором Focus 0..1, показание 12.12 ступенями; измерено на Pocket Cinema Camera 4K 31.10.2026. Ширина колокола резкости σ_ln снята картами резкости на f/1.2 (по зуму и расстоянию меняется незначительно)."
+ "notes": "Measured by sweeping Focus 0..1 and reading stepped 12.12 distance values on a Pocket Cinema Camera 4K, 2026-10-31. Sharpness width sigma_ln was measured from sharpness maps at f/1.2; it varies slightly with zoom and distance."
 }

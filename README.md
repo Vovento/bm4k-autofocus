@@ -1,7 +1,5 @@
 # BM4K Autofocus
 
-[Русская версия](README.ru.md)
-
 Face tracking autofocus and a local camera control dashboard for the **Blackmagic Pocket Cinema Camera 4K** on macOS.
 
 The camera supplies its own USB webcam feed to the Mac. BM4K Autofocus watches that feed with Apple Vision, tracks a face, evaluates sharpness, and sends focus commands to the camera over Bluetooth Low Energy. The browser dashboard shows the camera preview and controls focus, iris, shutter angle, ISO, white balance, recording and microphone level.
@@ -38,7 +36,7 @@ cd bm4k-autofocus
 
 The installer creates `.venv`, installs the pinned Python dependencies, builds the Dock app and background service, and asks whether to start the service at login. Open `BM4K Autofocus.app` afterward. It opens the local dashboard at [http://127.0.0.1:8765](http://127.0.0.1:8765).
 
-For a terminal-only start, use `.venv/bin/python dashboard.py` or double-click `Запуск пульта.command`. For an interface demo without hardware, run `.venv/bin/python dashboard.py --sim` while the service is stopped (both use port 8765).
+For a terminal-only start, use `.venv/bin/python dashboard.py` or double-click `Launch Dashboard.command`. For an interface demo without hardware, run `.venv/bin/python dashboard.py --sim` while the service is stopped (both use port 8765).
 
 On first launch, allow **Camera** and **Bluetooth** access for `BM4K Autofocus Service` in macOS System Settings → Privacy & Security. If the camera shows a pairing PIN, enter it on the Mac. The service log is at `~/Library/Logs/BM4K Autofocus.log`.
 

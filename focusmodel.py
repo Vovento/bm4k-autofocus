@@ -1,8 +1,8 @@
-"""Модель фокуса: позиция Focus (0..1) ↔ расстояние, которое показывает камера (параметр 12.12), и связь с размером лица.
+"""Focus model: Focus position (0..1) ↔ distance shown by the camera (parameter 12.12), and relationship with face size.
 
-Для Pocket 4K + Sigma 18-35 через Metabones: камера повторяемо отвечает на абсолютную команду Focus и присылает
-достигнутое расстояние строкой вида "178mm" ступенями. Расстояние до лица ≈ C · f / ширина лица в кадре,
-где f — фокусное расстояние (12.11), а C учится по результатам наводки (медиана последних замеров).
+For Pocket 4K + Sigma 18-35 via Metabones: the camera responds repeatably to the absolute Focus command and sends
+the distance reached by a line of the form "178mm" in steps. Distance to face ≈ C f / width of face in frame,
+where f is the focal length (12.11), and C is learned from the aiming results (median of the last measurements).
 """
 import bisect
 import json
@@ -12,27 +12,27 @@ import re
 import statistics
 from collections import deque
 
-# Измеренная кривая Focus → показание расстояния (центры «плато»; камера отдаёт показание ступенями).
-# Снята перебором 0..1 на этом объективе; положение плато зависит от зума на ±0.01–0.02, это уточняется по резкости.
+# Measured Focus curve → distance reading (plateau centers; camera gives readings in steps).
+# Shot by searching 0..1 on this lens; the position of the plateau depends on the zoom by ±0.01–0.02, this is specified by sharpness.
 CURVE = [(0.0, 56.0), (0.2, 59.0), (0.3, 64.0), (0.4, 69.0), (0.5, 80.0), (0.6, 93.0), (0.7, 124.0), (0.72, 137.0),
          (0.755, 154.0), (0.79, 178.0), (0.815, 212.0), (0.835, 262.0), (0.87, 354.0), (0.905, 593.0),
          (0.935, 10389.0)]
 _XS = [p[0] for p in CURVE]
 _LN_D = [math.log(p[1]) for p in CURVE]
-SIGMA_LN = 0.233      # ширина колокола резкости по ln(расстояния): в позициях фокуса она делится на наклон кривой
-N_REF = 1.2           # число диафрагмы, при котором измерена SIGMA_LN (Sigma 18-35 с бустером показывает f/1.2); ширина ∝ числу диафрагмы
-INFINITY_MM = 5000.0  # показания выше считаем «бесконечность»: для обучения не годятся
-LEGACY_SLUG = "64x-sigma-dc-18-35-1-7-hsm"  # данные пользователя в старом плоском формате принадлежат этому объективу
+SIGMA_LN = 0.233 # sharpness bell width by ln(distance): at focus positions it is divided by the slope of the curve
+N_REF = 1.2 # aperture number at which SIGMA_LN is measured (Sigma 18-35 with booster shows f/1.2); width ∝ aperture number
+INFINITY_MM = 5000.0 # We consider the readings above to be “infinity”: not suitable for training
+LEGACY_SLUG = "64x-sigma-dc-18-35-1-7-hsm" # user data in old flat format belongs to this lens
 PROFILES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "profiles")
 
 
 def lens_slug(name):
-    """Название объектива из камеры (параметр 12.9) → имя файла профиля."""
+    """Lens name from camera (parameter 12.9) → profile file name."""
     return re.sub(r"[^a-z0-9]+", "-", (name or "").lower()).strip("-") or "unknown"
 
 
 def load_profile(slug):
-    """Профиль объектива (кривая «позиция фокуса → расстояние» и пр.) из profiles/<slug>.json или None."""
+    """Lens profile (focus position → distance curve, etc.) from profiles/<slug>.json or None."""
     try:
         with open(os.path.join(PROFILES_DIR, slug + ".json"), encoding="utf-8") as f:
             return json.load(f)
@@ -47,21 +47,21 @@ def save_profile(slug, data):
 
 
 def set_curve(points):
-    """Сделать активной кривую объектива: [(позиция Focus, показание расстояния, мм), ...]."""
+    """Make active the lens curve: [(Focus position, distance reading, mm), ...]."""
     global _XS, _LN_D
     pts = sorted((float(x), float(d)) for x, d in points)
     if len(pts) < 2:
-        raise ValueError("в кривой должно быть минимум две точки")
+        raise ValueError("the curve must have at least two points")
     _XS = [p[0] for p in pts]
     ln, last = [], -1e9
     for _, d in pts:
-        last = max(last, math.log(max(d, 1.0)))  # расстояние не уменьшается с ростом позиции
+        last = max(last, math.log(max(d, 1.0))) # distance does not decrease with increasing position
         ln.append(last)
     _LN_D = ln
 
 
 def curve_from_sweep(pts):
-    """Перебор позиций [(x, показание или None)] по возрастанию x → точки кривой в центрах «плато» (показание идёт ступенями)."""
+    """Looping through positions [(x, reading or None)] in ascending order x → curve points at the centers of the "plateau" (reading in steps)."""
     groups = []
     for x, d in pts:
         if not d:
@@ -72,7 +72,7 @@ def curve_from_sweep(pts):
             groups.append([x, x, d])
     curve, last = [], 0.0
     for x0, x1, d in groups:
-        if d < last:  # шум: показание не может уменьшаться при росте позиции
+        if d < last: # noise: reading cannot decrease as position increases
             continue
         last = d
         curve.append(((x0 + x1) / 2, d))
@@ -80,7 +80,7 @@ def curve_from_sweep(pts):
 
 
 def parse_mm(text):
-    """"178mm" → 178.0; None, если разобрать нельзя."""
+    """"178mm" → 178.0; None, if it is impossible to make out."""
     if not isinstance(text, str):
         return None
     m = re.search(r"[0-9]+(?:\.[0-9]+)?", text)
@@ -88,7 +88,7 @@ def parse_mm(text):
 
 
 def distance_from_x(x):
-    """Показание расстояния для позиции фокуса (линейно по ln D между точками кривой)."""
+    """Distance display for focus position (linear in ln D between curve points)."""
     x = min(max(x, _XS[0]), _XS[-1])
     i = max(1, bisect.bisect_left(_XS, x))
     x0, x1 = _XS[i - 1], _XS[i]
@@ -97,7 +97,7 @@ def distance_from_x(x):
 
 
 def x_from_distance(d):
-    """Позиция фокуса для показания расстояния (обратная функция)."""
+    """Focus position for distance indication (inverse function)."""
     ln = math.log(max(d, 1.0))
     ln = min(max(ln, _LN_D[0]), _LN_D[-1])
     i = max(1, bisect.bisect_left(_LN_D, ln))
@@ -106,31 +106,31 @@ def x_from_distance(d):
 
 
 def slope_ln_d(x):
-    """Наклон ln(расстояние) по позиции фокуса на базовой кривой (в позиции x без сдвига шкалы)."""
+    """Slope ln(distance) at the focal position on the base curve (at position x without scale shift)."""
     x = min(max(x, _XS[0] + 1e-6), _XS[-1] - 1e-6)
     i = max(1, bisect.bisect_left(_XS, x))
     return (_LN_D[i] - _LN_D[i - 1]) / (_XS[i] - _XS[i - 1])
 
 
 class FocusModel:
-    """Постоянная C (расстояние ≈ C · f / размер лица) и два уточнения; хранится в файле.
+    """Constant C (distance ≈ C f / face size) and two refinements; stored in file.
 
-    • Таблица C по размеру лица: C зависит от расстояния, и после каждой наводки по резкости в ячейку записывается
-      показание расстояния камеры в этой точке. Это физическая величина: она не зависит от дрейфа шкалы Focus.
-    • Сдвиг шкалы `shift`: позиция Focus, дающая то же показание расстояния, со временем уходит (после многих наводок камеры
-      на 0.09 за вечер). Его оценивает движок по обратной связи: позиция команды минус позиция по базовой кривой для показания.
-    Размер лица — доли кадра (среднее геометрическое рамки и расстояния между глазами).
+    • Table C by face size: C depends on the distance, and after each focusing is recorded in the cell
+      camera distance reading at that point. This is a physical quantity: it does not depend on the drift of the Focus scale.
+    • Scale shift `shift`: the Focus position, giving the same distance reading, goes away over time (after many camera adjustments
+      by 0.09 per evening). It is evaluated by the engine based on feedback: the position of the command minus the position along the base curve for the reading.
+    The size of the face is a fraction of the frame (the geometric mean of the frame and the distance between the eyes).
     """
-    BIN = 0.06           # ширина ячейки таблицы по ln(размер/фокусное)
-    REACH = 0.35         # дальше этого от последней ячейки (по ln) значение возвращается к общему C
+    BIN = 0.06 # table cell width by ln(size/focal)
+    REACH = 0.35 # further than this from the last cell (by ln) the value returns to the general C
 
     def __init__(self, path=None, maxlen=15, lens=None):
         self.path, self.lens = path, lens
         self.samples = deque(maxlen=maxlen)
-        self.cbins = {}  # номер ячейки → C
+        self.cbins = {} # cell number → C
         self.shift = 0.0
-        self.qb = {}  # зум (фокусное, ступени по 3 мм) → лучшая виденная резкость лица × размер лица (мера «картинка резкая»)
-        self.sigma_ln, self.n_ref = SIGMA_LN, N_REF  # из профиля объектива
+        self.qb = {} # zoom (focal, 3 mm steps) → best seen face sharpness × face size (the “picture is sharp” measure)
+        self.sigma_ln, self.n_ref = SIGMA_LN, N_REF # from lens profile
         if path:
             data = self._read_all().get("lenses", {}).get(lens or "unknown", {})
             try:
@@ -142,7 +142,7 @@ class FocusModel:
                 pass
 
     def _read_all(self):
-        """Файл пользователя: {"lenses": {slug: данные}}. Старый плоский формат (один объектив) переносится в Sigma."""
+        """User file: {"lenses": {slug: data}}. The old flat format (single lens) is transferred to Sigma."""
         try:
             with open(self.path) as f:
                 data = json.load(f)
@@ -172,7 +172,7 @@ class FocusModel:
         return str(int(round(focal_mm / 3.0)))
 
     def q_get(self, focal_mm):
-        """Лучшая виденная «резкость × размер» для этого зума; для нового зума — 80% ближайшего известного (или None)."""
+        """Best seen "sharpness × size" for this zoom; for new zoom - 80% of nearest known (or None)."""
         k = self._qkey(focal_mm)
         if k in self.qb:
             return self.qb[k]
@@ -182,12 +182,12 @@ class FocusModel:
         return 0.8 * self.qb[near]
 
     def q_verified(self, focal_mm, verified):
-        """Обновить «лучшее» по проверенному результату (найденный пик или наводка камеры), а не по любому скачку резкости."""
+        """Update the "best" based on the verified result (found peak or camera aim), and not on any sharpness jump."""
         k = self._qkey(focal_mm)
         cur = self.qb.get(k)
         if cur is None:
             self.qb[k] = verified
-        elif verified > cur:  # вверх быстро (но не больше ×1.3 за раз), вниз очень медленно: мягкий результат норму не обесценивает
+        elif verified > cur: # up quickly (but no more than ×1.3 at a time), down very slowly: a soft result does not devalue the norm
             self.qb[k] = min(cur + (verified - cur) * 0.5, 1.3 * cur)
         else:
             self.qb[k] = cur + (verified - cur) * 0.05
@@ -198,7 +198,7 @@ class FocusModel:
         return statistics.median(self.samples) if self.samples else None
 
     def add(self, d_mm, size, focal_mm):
-        """Добавить замер после удачной наводки. Возвращает True, если замер принят."""
+        """Add a measurement after a successful pointing. Returns True if the measurement is accepted."""
         if not (d_mm and size and focal_mm) or d_mm >= INFINITY_MM:
             return False
         self.samples.append(d_mm * size / focal_mm)
@@ -206,7 +206,7 @@ class FocusModel:
         return True
 
     def learn_c(self, d_mm, size, focal_mm):
-        """Запомнить C для этого размера лица по показанию камеры в точке лучшей резкости."""
+        """Remember C for this face size according to the camera reading at the point of best sharpness."""
         if not (d_mm and size and focal_mm) or d_mm >= INFINITY_MM:
             return
         k = round(math.log(size / focal_mm) / self.BIN)
@@ -215,7 +215,7 @@ class FocusModel:
         self.save()
 
     def c_at(self, size, focal_mm):
-        """C для данного размера лица: линейно между ближайшими заполненными ячейками, вдали — общий C."""
+        """C for a given face size: linear between the nearest filled cells, in the distance - common C."""
         base = self.C
         if not self.cbins:
             return base
@@ -230,12 +230,12 @@ class FocusModel:
             t = (pos - a) / (b - a)
             return self.cbins[a] * (1 - t) + self.cbins[b] * t
         near = lo[-1] if lo else hi[0]
-        fade = max(0.0, 1.0 - max(0.0, abs(pos - near) - 0.5) * self.BIN / self.REACH)  # в пределах половины ячейки — целиком
+        fade = max(0.0, 1.0 - max(0.0, abs(pos - near) - 0.5) * self.BIN / self.REACH) # within half the cell - entirely
         return base + (self.cbins[near] - base) * fade if base else self.cbins[near]
 
     def sigma_x(self, x, fnumber=None):
-        """Ширина колокола резкости в позициях фокуса вокруг x. На близком плане шкала «растянута», колокол шире;
-        при более закрытой диафрагме глубина резкости больше, колокол шире пропорционально числу диафрагмы."""
+        """The width of the sharpness bell at focus positions around x. In the close-up, the scale is “stretched”, the bell is wider;
+        with a closed aperture, the depth of field is greater, the bell is wider in proportion to the aperture number."""
         scale = (fnumber / self.n_ref) if (fnumber and self.n_ref) else 1.0
         s = self.sigma_ln * scale / max(slope_ln_d(x - self.shift), 1e-3)
         return min(max(s, 0.015), 0.07 * max(scale, 1.0))
@@ -244,5 +244,5 @@ class FocusModel:
         return self.c_at(size, focal_mm) * focal_mm / size
 
     def target_x(self, size, focal_mm):
-        """Позиция Focus для лица заданного размера: по базовой кривой для целевого расстояния плюс текущий сдвиг шкалы."""
+        """Focus position for a given face size: along the base curve for the target distance plus the current scale offset."""
         return x_from_distance(self.target_distance(size, focal_mm)) + self.shift
