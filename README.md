@@ -1,14 +1,46 @@
-# BM4K Autofocus
+# BM4K Autofocus — face-tracking autofocus for a BMPCC 4K webcam
 
-Face tracking autofocus and a local camera control dashboard for the **Blackmagic Pocket Cinema Camera 4K** on macOS.
+Use a **Blackmagic Pocket Cinema Camera 4K as a webcam on macOS**, with face-tracking autofocus and a local camera control dashboard. The camera supplies the video feed over USB-C; BM4K Autofocus adjusts the lens over Bluetooth while you use that feed in Zoom or another video app.
 
-The camera supplies its own USB webcam feed to the Mac. BM4K Autofocus watches that feed with Apple Vision, tracks a face, evaluates sharpness, and sends focus commands to the camera over Bluetooth Low Energy. The browser dashboard shows the camera preview and controls focus, iris, shutter angle, ISO, white balance, recording and microphone level.
+BM4K Autofocus watches the Blackmagic video feed with Apple Vision, tracks a face, evaluates sharpness, and sends focus commands over Bluetooth Low Energy. The browser dashboard shows the camera preview and controls focus, iris, shutter angle, ISO, white balance, recording and microphone level.
 
 **This is not a virtual webcam or a video forwarding app.** Select the Pocket Cinema Camera itself as the video source in Zoom or another app; BM4K Autofocus runs alongside it to control the camera. The dashboard and face tracking use the same Blackmagic video feed. Built-in Mac, iPhone and generic capture cameras are rejected as autofocus sources.
 
 > **Hardware tested:** BMPCC 4K, Sigma 18–35 mm f/1.8 Art EF, Metabones Speed Booster 0.64× EF–MFT, macOS. With this setup, focusing after motion stops was observed at roughly 1–1.5 seconds in tests. Results vary with light, distance, lens and camera settings. Other lenses and BMPCC 6K models are **not yet verified**; contributions and test results are welcome.
 
 Unofficial community project. Not affiliated with or endorsed by Blackmagic Design. Blackmagic and Pocket Cinema Camera are trademarks of their respective owner.
+
+## Set up your BMPCC 4K webcam
+
+Choose either installation path below. Both end with selecting **Pocket Cinema Camera** as the video source in your meeting or streaming app. BM4K Autofocus controls the physical camera's focus; it does not create a separate webcam device.
+
+### Option A: ask your coding agent to install it
+
+Give your coding agent the repository link and this instruction:
+
+> Install [BM4K Autofocus](https://github.com/Vovento/bm4k-autofocus) on my Mac using its README and `install.sh`. Check that my Python version is supported, install the required dependencies, and launch the dashboard. Ask me to enable Bluetooth on the Mac and BMPCC 4K, connect the camera over USB-C in webcam mode, and approve any macOS Camera/Bluetooth permission prompts. Verify that the dashboard detects the Blackmagic video feed and Bluetooth link; do not select my MacBook or iPhone camera. Ask whether I want the service to start at login. Explain how to select **Pocket Cinema Camera** as the webcam in my video app.
+
+Stay with the agent for physical camera settings and macOS permission prompts. The agent cannot turn on the camera's Bluetooth or approve those prompts for you.
+
+### Option B: install it yourself
+
+1. On the **BMPCC 4K**, enable Bluetooth in **Menu → Setup → Bluetooth**. On the **Mac**, turn Bluetooth on. Disconnect Blackmagic's phone control app if it is connected; the camera accepts one BLE controller at a time.
+2. Connect the camera to the Mac with a USB-C **data** cable. Enable the camera's webcam/USB video output and confirm that macOS lists **Pocket Cinema Camera** as a camera. Keep the camera powered on.
+3. Ensure you have **macOS, Python 3.9–3.12, and Xcode Command Line Tools**. If needed, install the tools with `xcode-select --install`. Check Python with `python3 --version`.
+4. In Terminal, run:
+
+   ```bash
+   git clone https://github.com/Vovento/bm4k-autofocus.git
+   cd bm4k-autofocus
+   ./install.sh
+   ```
+
+5. When the installer asks, choose whether to start the service automatically at login. Then open **BM4K Autofocus.app** from the cloned folder. It opens the dashboard at [http://127.0.0.1:8765](http://127.0.0.1:8765).
+6. On first launch, grant **Camera** and **Bluetooth** access to **BM4K Autofocus Service** in macOS **System Settings → Privacy & Security** when prompted. Complete any camera pairing prompt on the Mac.
+7. In the dashboard, wait for the Blackmagic Bluetooth link and camera preview, then enable **Follow face**. The app will use only the Blackmagic video device for tracking; it will not switch to the MacBook or iPhone camera.
+8. In Zoom, OBS, or your other video app, select **Pocket Cinema Camera** as the **camera/webcam**. Keep BM4K Autofocus running alongside it for autofocus. Select your preferred microphone separately in that app.
+
+If you have another lens or a BMPCC 6K, read [Lens profiles and compatibility](#lens-profiles-and-compatibility) before relying on autofocus; only the hardware combination listed above has been tested.
 
 ## What it does
 
@@ -26,25 +58,13 @@ Unofficial community project. Not affiliated with or endorsed by Blackmagic Desi
 
 The code recognises `Pocket Cinema Camera …` and `Blackmagic … Camera` video device names; this is **not** a claim that every such model supports the tested focus behaviour.
 
-## Install and run
+## Other ways to run
 
-```bash
-git clone https://github.com/Vovento/bm4k-autofocus.git
-cd bm4k-autofocus
-./install.sh
-```
-
-The installer creates `.venv`, installs the pinned Python dependencies, builds the Dock app and background service, and asks whether to start the service at login. Open `BM4K Autofocus.app` afterward. It opens the local dashboard at [http://127.0.0.1:8765](http://127.0.0.1:8765).
+The installer creates `.venv`, installs the pinned Python dependencies, and builds the Dock app and background service.
 
 For a terminal-only start, use `.venv/bin/python dashboard.py` or double-click `Launch Dashboard.command`. For an interface demo without hardware, run `.venv/bin/python dashboard.py --sim` while the service is stopped (both use port 8765).
 
-On first launch, allow **Camera** and **Bluetooth** access for `BM4K Autofocus Service` in macOS System Settings → Privacy & Security. If the camera shows a pairing PIN, enter it on the Mac. The service log is at `~/Library/Logs/BM4K Autofocus.log`.
-
-### Using it as a webcam
-
-1. Connect the BMPCC to the Mac by USB-C and confirm that it appears as a webcam in macOS.
-2. Open BM4K Autofocus, wait for both Bluetooth and video status to connect, and enable tracking AF in the dashboard.
-3. In Zoom or your video app, choose **Pocket Cinema Camera** as the camera. The app adjusts lens focus; it does not replace the camera's video stream.
+The service log is at `~/Library/Logs/BM4K Autofocus.log`.
 
 ## Lens profiles and compatibility
 
