@@ -68,7 +68,9 @@ The service log is at `~/Library/Logs/BM4K Autofocus.log`.
 
 ## Lens profiles and compatibility
 
-The included [`profiles/64x-sigma-dc-18-35-1-7-hsm.json`](profiles/64x-sigma-dc-18-35-1-7-hsm.json) contains a measured focus-position-to-distance curve for the tested Sigma 18–35/Metabones setup. It is lens-specific. Personal learned data is stored separately in `focus_model.json` and is intentionally excluded from Git.
+The included [`profiles/64x-sigma-dc-18-35-1-7-hsm.json`](profiles/64x-sigma-dc-18-35-1-7-hsm.json) contains a measured focus-position-to-distance curve for the tested Sigma 18–35/Metabones setup. It is lens-specific and is available to everyone who installs the project.
+
+On first use, precise tracking has no local learning data yet. With a face visible, it uses the camera's one-shot AF to establish an initial focus point, then learns how face size and focal length relate to the camera's reported focus distance. As it runs, it also adjusts for focus-scale drift and records sharpness references. These numeric adjustments are saved locally in `focus_model.json` for each lens; they can vary with the subject, distance, camera setup and shooting conditions such as lighting. The file is excluded from Git so another user starts with the shared lens profile and builds adjustments for their own setup. No face images are stored in this file.
 
 For a different lens, the precise mode attempts a one-time sweep of the focus range (about a minute) and writes a new `profiles/<lens>.json`. During that sweep the focus travels across its range. If the camera does not report distance for that lens, the profile is marked `no_distance` and tracking falls back to the camera's centre-frame AF. **This path has not been validated on other lenses:** inspect the result and treat it as experimental, rather than reusing the Sigma curve. Please share lens model, adapter, camera model, whether focus distance is reported, and a tested profile via an issue or pull request. Do not include `focus_model.json`, traces or images of people.
 
